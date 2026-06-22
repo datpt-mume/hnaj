@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build
+.next/
+dist/
+
+# Env
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+
+# Go
+hnaj-be/bin/
+hnaj-be/tmp/
+hnaj-be/vendor/
