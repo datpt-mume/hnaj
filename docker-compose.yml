@@ -1,0 +1,46 @@
+services:
+  be:
+    build:
+      context: ./hnaj-be
+      dockerfile: Dockerfile
+    container_name: hnaj-be
+    working_dir: /var/www/html
+    volumes:
+      - ./hnaj-be:/var/www/html
+      - be_vendor:/var/www/html/vendor
+      - ./.agents:/workspace/.agents:ro
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "${BE_PORT:-8000}:8000"
+      - "${DB_PORT:-3306}:3306"
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-hnaj}
+      DB_USERNAME: ${DB_USERNAME:-hnaj}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      DB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+
+  fe:
+    build:
+      context: ./hnaj-fe
+      dockerfile: Dockerfile
+    container_name: hnaj-fe
+    working_dir: /app
+    volumes:
+      - ./hnaj-fe:/app
+      - fe_node_modules:/app/node_modules
+      - ./.agents:/workspace/.agents:ro
+    ports:
+      - "${FE_PORT:-5173}:5173"
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api}
+    command: sh -c 'if [ -f package.json ] && [ ! -d node_modules/.bin ]; then npm ci; fi; npm run dev -- --host 0.0.0.0'
+    depends_on:
+      - be
+
+volumes:
+  be_vendor:
+  mysql_data:
+  fe_node_modules:

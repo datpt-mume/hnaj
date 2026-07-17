@@ -2,7 +2,7 @@
 
 > **Dự án:** Gợi ý địa điểm theo ngữ cảnh (Context-aware Place Recommendation)
 > **Tech Lead / PM:** Phạm Tuấn Đạt
-> **Stack:** Go (Backend) + Next.js (Frontend) + PostgreSQL/PostGIS (Database)
+> **Stack:** PHP Laravel (Backend) + React.js/Vite (Frontend) + MySQL (Database)
 > **Ngày:** 2026-06-20
 
 ---
@@ -187,34 +187,38 @@ Content-Type: application/json
 }
 ```
 
-### 2.8 SQL Query Mẫu (PostGIS)
+### 2.8 SQL Query Mẫu (MySQL)
 
 ```sql
--- Query gốc (fallback_level = 0)
+-- Query gốc (fallback_level = 0), khoảng cách tính bằng Haversine (km)
 SELECT p.id, p.name, p.slug, p.cover_image,
        p.price_min, p.price_max, p.address, p.rating,
-       ST_Distance(p.location, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography) / 1000 AS distance_km
+       (6371 * ACOS(
+         COS(RADIANS(?)) * COS(RADIANS(p.latitude)) *
+         COS(RADIANS(p.longitude) - RADIANS(?)) +
+         SIN(RADIANS(?)) * SIN(RADIANS(p.latitude))
+       )) AS distance_km
 FROM places p
-WHERE ST_DWithin(
-    p.location,
-    ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
-    $3 * 1000  -- radius in meters
-)
-AND p.price_min <= $4
+WHERE p.is_active = 1
+AND (6371 * ACOS(
+  COS(RADIANS(?)) * COS(RADIANS(p.latitude)) *
+  COS(RADIANS(p.longitude) - RADIANS(?)) +
+  SIN(RADIANS(?)) * SIN(RADIANS(p.latitude))
+)) <= ?
+AND p.price_min <= ?
 AND (
-    $5::text[] IS NULL
-    OR ARRAY_LENGTH($5::text[], 1) IS NULL
+    ? IS NULL
     OR p.id IN (
         SELECT pt.place_id
         FROM place_tag pt
         JOIN tags t ON t.id = pt.tag_id
-        WHERE t.slug = ANY($5)
+        WHERE t.slug IN (?)
         GROUP BY pt.place_id
-        HAVING COUNT(DISTINCT t.slug) = ARRAY_LENGTH($5, 1)
+        HAVING COUNT(DISTINCT t.slug) = ?
     )
 )
 ORDER BY random()
-LIMIT $6;
+LIMIT ?;
 ```
 
 ---
@@ -324,7 +328,7 @@ BE sẽ chịu trách nhiệm toàn bộ logic cascade fallback. FE chỉ cần 
 hnaj/
 ├── docs/
 │   └── PRD_TECH_SPEC.md          ← File này
-├── hnaj-be/                       ← Go Backend
+├── hnaj-be/                       ← Laravel Backend
 │   ├── cmd/server/main.go
 │   ├── internal/
 │   │   ├── handler/
@@ -335,7 +339,7 @@ hnaj/
 │   ├── migrations/
 │   ├── go.mod
 │   └── Makefile
-└── hnaj-fe/                       ← Next.js Frontend
+└── hnaj-fe/                       ← React.js + Vite + Tailwind CSS
     ├── src/
     │   ├── app/
     │   ├── components/
@@ -343,7 +347,8 @@ hnaj/
     │   ├── types/
     │   └── lib/
     ├── package.json
-    ├── next.config.js
+    ├── vite.config.ts
+    ├── index.html
     └── tailwind.config.ts
 ```
 
