@@ -1,357 +1,96 @@
-# Tài liệu Đặc tả & Phân tích Hệ thống — HNaj
+# HNaj Product and Technical Specification
 
-> **Dự án:** Gợi ý địa điểm theo ngữ cảnh (Context-aware Place Recommendation)
-> **Tech Lead / PM:** Phạm Tuấn Đạt
-> **Stack:** PHP Laravel (Backend) + React.js/Vite (Frontend) + MySQL (Database)
-> **Ngày:** 2026-06-20
+> **Dự án:** HNaj - gợi ý địa điểm theo ngữ cảnh
+> **Stack mục tiêu:** Laravel 13 + PHP 8.3, React 19 + Vite 8 + TypeScript, MySQL 8
+> **Trạng thái tài liệu:** Baseline đã QA, implementation nghiệp vụ chưa bắt đầu
+> **Ngôn ngữ sản phẩm:** UI tiếng Việt; API dùng error code/message key ổn định
 
----
+## 1. Nguồn sự thật và phạm vi tài liệu
 
-## 1. GÓC ĐỘ BA (Business Analyst) — Phân tích luồng & Fallback
+HNaj dùng các nguồn sự thật theo phạm vi:
 
-### 1.1 Đánh giá luồng hiện tại
+- **Nghiệp vụ và UX:** tài liệu này.
+- **HTTP contract:** [`api/openapi.yaml`](api/openapi.yaml).
+- **Recommendation policy:** [`api/recommendation-policy.md`](api/recommendation-policy.md).
+- **Database schema thực thi:** Laravel migrations; thiết kế và semantics được giải thích tại [`database/ERD.md`](database/ERD.md) và [`database/DATA_DICTIONARY.md`](database/DATA_DICTIONARY.md).
 
-Luồng chính hiện tại: Input → Lọc không gian → Lọc giá → Lọc tags (AND) → Random → Limit → Output.
+Khi có xung đột, phải dừng và báo cáo; không tự đoán. Mọi API client-observable change phải cập nhật OpenAPI, policy nếu liên quan và API changelog trong cùng change. Mọi schema change phải cập nhật migration, ERD và data dictionary.
 
-#### Các điểm "Dead-end" tiềm ẩn:
+## 2. Hiện trạng và kiến trúc mục tiêu
 
-| # | Tình huống | Nguyên nhân | Xác suất |
-|---|-----------|-------------|----------|
-| 1 | Không có quán nào trong bán kính | Khu vực ngoại ô, vùng mới | Trung bình |
-| 2 | Không quán nào vừa túi tiền | Khu vực cao cấp, ngân sách thấp | Trung bình–Cao |
-| 3 | Không quán nào có đủ tags (AND) | Chọn quá nhiều tags, tags hiếm | Cao |
-| 4 | Kết hợp 2+ yếu tố trên | — | Thấp–Trung bình |
+### 2.1 Hiện trạng scaffold
 
-**Kết luận:** Luồng hiện tại CHƯA chặn hoàn toàn Dead-end. Cần cơ chế fallback.
+- `hnaj-be/` là Laravel skeleton 13.8 trên PHP 8.3, hiện chủ yếu có route web/health và migration mặc định.
+- `hnaj-fe/` là React + Vite + TypeScript scaffold, hiện chưa có màn hình/domain recommendation.
+- Docker Compose hiện chạy BE và FE; database dev đang được khởi tạo cùng container BE bằng MariaDB.
+- Các operation trong OpenAPI là target contract, chưa phải bằng chứng route/code đã tồn tại.
 
-### 1.2 Đề xuất Luồng Fallback (Cascading Relaxation)
+### 2.2 Mục tiêu kiến trúc
 
-Áp dụng chiến lược "nới lỏng dần" (Cascading Relaxation) theo thứ tự ưu tiên:
+- Backend Laravel phục vụ REST API `/api/v1`.
+- Frontend React/Vite dùng OpenAPI làm contract cho request, response, error và message key.
+- Database mục tiêu là MySQL 8 service riêng. Việc chuyển Docker topology là phase triển khai riêng, không thuộc baseline tài liệu này.
+- Public flow mobile-first; admin flow desktop-oriented trong cùng React app.
+- Authentication dùng Laravel Sanctum cookie/session và CSRF.
 
-```
-Lần 1: Query gốc (đúng bán kính, đúng giá, đủ tags AND)
-   ↓ nếu empty
-Lần 2: Nới bán kính ×1.5 (VD: 1km→1.5km, 3km→4.5km, 5km→7.5km)
-   ↓ nếu empty
-Lần 3: Nới bán kính ×2.0 + giảm tags xuống OR (chỉ cần có ít nhất 1 tag)
-   ↓ nếu empty
-Lần 4: Bỏ qua tag filter hoàn toàn + nới bán kính ×3.0
-   ↓ nếu empty
-Lần 5: Trả về thông báo "Không tìm thấy địa điểm phù hợp. Hãy thử khu vực khác nhé!"
-```
+## 3. Actors và quyền
 
-#### UX Feedback cho từng lần fallback:
-- **Lần 2:** Toast: "Đang mở rộng phạm vi tìm kiếm lên {X}km..."
-- **Lần 3:** Toast: "Đang tìm kiếm linh hoạt hơn với các tags liên quan..."
-- **Lần 4:** Toast: "Đang hiển thị các địa điểm gần bạn nhất..."
-- **Lần 5:** Hiển thị Empty State UI với illustration + CTA "Thử lại với bộ lọc khác".
+| Actor | Quyền chính |
+|---|---|
+| Guest | Chọn vị trí, lọc, recommendation, xem place/tag/review public; anonymous ID cookie hỗ trợ chống lặp 24 giờ. |
+| User | Quyền guest; email/password hoặc Google auth; favorite; review/rating; xem/xóa account theo policy. |
+| Owner | Do admin invite; quản lý một hoặc nhiều place được assignment; gửi nội dung duyệt; analytics riêng; phản hồi review của place. |
+| Editor | CRUD place/tag/content; import; duyệt hoặc từ chối nội dung owner; không quản lý user/role. |
+| Admin | Quản lý user/role/invite/assignment, nội dung, workflow và analytics toàn hệ thống. |
 
-#### Chỉ số theo dõi (Metrics):
-- Tỷ lệ fallback từng cấp (để tuning bán kính mặc định)
-- Tỷ lệ bounce khi nhận Empty State cuối cùng
+Một user có thể có nhiều role. Owner không tự đăng ký; admin tạo invite. Một place có thể có nhiều owner/manager.
 
----
+## 4. Content workflow và domain model
 
-## 2. GÓC ĐỘ BACKEND — API Contract
+Mỗi chi nhánh là một `Place`, có ULID public ID và slug unique. Place có tên, mô tả, địa chỉ, WGS 84 latitude/longitude, khoảng giá VND, giờ mở cửa, liên hệ, tiện ích, gallery/cover, tags và rating aggregate.
 
-### 2.1 Endpoint
+Target content status: `draft` -> `pending_review` -> `published` hoặc `rejected` -> `archived`. Soft delete được dùng cùng archive cho dữ liệu cần phục hồi/audit. Public recommendation chỉ dùng place published, chưa bị xóa mềm và đang mở.
 
-```
-POST /api/v1/recommendations
-Content-Type: application/json
-```
+Domain target gồm place/tag/group/amenity/media/opening-hours, ownership, users/roles/invites, favorites, recommendation history, reviews/review media/experience tags/reports/owner responses, analytics events và idempotency records. Chi tiết target schema nằm trong database docs.
 
-### 2.2 Request Payload
+## 5. Recommendation
 
-```json
-{
-  "location": {
-    "lat": 10.762622,
-    "lng": 106.660172
-  },
-  "radius_km": 3.0,
-  "price_max": 150000,
-  "tags": ["hen-ho", "rieng-tu", "trong-nha"],
-  "limit": 3
-}
-```
+Request chính là `POST /api/v1/recommendations`; contract đầy đủ nằm trong OpenAPI.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `location.lat` | float64 | **Yes** | Vĩ độ (WGS 84) |
-| `location.lng` | float64 | **Yes** | Kinh độ (WGS 84) |
-| `radius_km` | float64 | **Yes** | Bán kính tìm kiếm (km), range: 0.5–20.0 |
-| `price_max` | int | **Yes** | Ngân sách tối đa/người (VNĐ) |
-| `tags` | []string | No | Danh sách tag slug (phép AND nếu có) |
-| `limit` | int | No | Số kết quả (1 hoặc 3), mặc định: 3 |
-| `fallback_level` | int | No | Dùng nội bộ cho fallback, FE không cần gửi |
+- Vị trí bắt buộc; hỗ trợ browser GPS và address search qua geocoding adapter. Provider production là TBD.
+- Radius input 0.5-20 km; fallback không vượt 20 km.
+- Budget là hard constraint. Place phù hợp khi giá trung bình của `price_min`/`price_max` không vượt `price_max` request.
+- Tags match OR và scoring theo số tag khớp.
+- Weighted random ưu tiên tag > distance > Bayesian rating. Hệ số cụ thể là configurable/TBD.
+- Cascade: radius 1.5x -> giảm yêu cầu tag score -> bỏ tag -> radius 2x, dừng khi đủ `limit`; hết cấp trả tập tốt nhất có được.
+- Không nới budget.
+- Mọi place được gợi ý trong 24 giờ bị loại khỏi pool ưu tiên. Guest dùng anonymous functional cookie; user dùng user ID. Khi hết pool, place cũ hơn 24 giờ được phép xuất hiện.
+- Backend xử lý cascade trong một request. FE hiển thị loading chung và chỉ hiển thị message/meta cuối.
+- Test/local có thể dùng seed random nội bộ; production không nhận seed từ client.
 
-### 2.3 Response — Success (200)
+## 6. Public user features
 
-```json
-{
-  "success": true,
-  "data": {
-    "places": [
-      {
-        "id": "plc_a1b2c3",
-        "name": "Cà phê Trứng Giảng",
-        "slug": "ca-phe-trung-giang",
-        "cover_image": "https://cdn.hnaj.app/images/plc_a1b2c3_cover.jpg",
-        "distance_km": 2.5,
-        "price_min": 30000,
-        "price_max": 80000,
-        "price_display": "30k - 80k",
-        "tags": [
-          {"id": "tag_01", "name": "Hẹn hò", "slug": "hen-ho"},
-          {"id": "tag_03", "name": "Trong nhà", "slug": "trong-nha"}
-        ],
-        "matched_tags": ["hen-ho", "trong-nha"],
-        "address": "39 Nguyễn Hữu Huân, Hoàn Kiếm, Hà Nội",
-        "rating": 4.5
-      }
-    ],
-    "meta": {
-      "total_matched": 12,
-      "fallback_applied": false,
-      "fallback_level": 0,
-      "query_radius_km": 3.0,
-      "message": "Tìm thấy 12 địa điểm, hiển thị 3 gợi ý ngẫu nhiên."
-    }
-  }
-}
-```
+- `GET /api/v1/tags`: tag active/published có group, icon/emoji, sort order và search.
+- `GET /api/v1/places/{slug}`: detail place published.
+- Favorites: user authenticated thêm/xóa/list; PUT/DELETE idempotent.
+- Reviews: user authenticated được một review/place, gồm rating 1-5, text, ảnh và experience tags; auto-publish, có report/moderation. Owner được một response/review.
+- Rating aggregate dùng Bayesian/weighted rating để giảm ảnh hưởng của sample nhỏ.
+- User không xem recommendation history và không có reset history trong MVP.
 
-### 2.4 Response — Fallback Applied (200)
+## 7. Authentication, privacy và analytics
 
-```json
-{
-  "success": true,
-  "data": {
-    "places": [ /* ... same structure ... */ ],
-    "meta": {
-      "total_matched": 4,
-      "fallback_applied": true,
-      "fallback_level": 2,
-      "query_radius_km": 6.0,
-      "relaxed_tags": true,
-      "message": "Đã mở rộng phạm vi lên 6km và tìm kiếm linh hoạt hơn."
-    }
-  }
-}
-```
+User thường có thể đăng ký email/password hoặc Google. Owner/editor/admin chỉ được tạo qua admin invite. Auth SPA dùng Sanctum cookie/session.
 
-### 2.5 Response — No Results (200)
+Backend tự ghi recommendation request/result. Frontend chỉ gửi các event allowlisted như impression, click, favorite, empty/bounce; analytics cần consent. Anonymous ID là functional cookie cần cho chống lặp. History giữ 30 ngày; raw analytics giữ 12 tháng. Khi xóa account, xóa PII/token/profile/favorite và ẩn danh nội dung/analytics hợp lệ.
 
-```json
-{
-  "success": true,
-  "data": {
-    "places": [],
-    "meta": {
-      "total_matched": 0,
-      "fallback_applied": true,
-      "fallback_level": 5,
-      "query_radius_km": 15.0,
-      "message": "Không tìm thấy địa điểm phù hợp. Hãy thử khu vực khác nhé!"
-    }
-  }
-}
-```
+## 8. Compatibility và quality rules
 
-### 2.6 Response — Validation Error (422)
+API dùng URL `/api/v1`. Trước release, contract có thể điều chỉnh trong v1 nhưng phải cập nhật tất cả tài liệu liên quan. Sau release, breaking change phải deprecate có thời hạn hoặc tạo version mới.
 
-```json
-{
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Invalid request parameters.",
-    "details": [
-      {"field": "radius_km", "message": "Bán kính phải trong khoảng 0.5–20.0 km"},
-      {"field": "location.lat", "message": "Vĩ độ không hợp lệ"}
-    ]
-  }
-}
-```
+Create quan trọng và import hỗ trợ `Idempotency-Key`; TTL cụ thể TBD. Contract validation là OpenAPI-driven. Backend integration test mục tiêu chạy MySQL 8; frontend cần unit/component và E2E critical flows. Mọi dependency mới phải nêu package, lý do, alternative và chờ duyệt.
 
-### 2.7 Response — Server Error (500)
+## 9. Non-goals và TBD
 
-```json
-{
-  "success": false,
-  "error": {
-    "code": "INTERNAL_ERROR",
-    "message": "Đã xảy ra lỗi. Vui lòng thử lại sau."
-  }
-}
-```
+Baseline này chưa triển khai route, migration, model, service, component, admin UI, Docker topology MySQL 8, Sanctum, Zustand, Tailwind, router, test framework, CI hay provider geocoding/media.
 
-### 2.8 SQL Query Mẫu (MySQL)
-
-```sql
--- Query gốc (fallback_level = 0), khoảng cách tính bằng Haversine (km)
-SELECT p.id, p.name, p.slug, p.cover_image,
-       p.price_min, p.price_max, p.address, p.rating,
-       (6371 * ACOS(
-         COS(RADIANS(?)) * COS(RADIANS(p.latitude)) *
-         COS(RADIANS(p.longitude) - RADIANS(?)) +
-         SIN(RADIANS(?)) * SIN(RADIANS(p.latitude))
-       )) AS distance_km
-FROM places p
-WHERE p.is_active = 1
-AND (6371 * ACOS(
-  COS(RADIANS(?)) * COS(RADIANS(p.latitude)) *
-  COS(RADIANS(p.longitude) - RADIANS(?)) +
-  SIN(RADIANS(?)) * SIN(RADIANS(p.latitude))
-)) <= ?
-AND p.price_min <= ?
-AND (
-    ? IS NULL
-    OR p.id IN (
-        SELECT pt.place_id
-        FROM place_tag pt
-        JOIN tags t ON t.id = pt.tag_id
-        WHERE t.slug IN (?)
-        GROUP BY pt.place_id
-        HAVING COUNT(DISTINCT t.slug) = ?
-    )
-)
-ORDER BY random()
-LIMIT ?;
-```
-
----
-
-## 3. GÓC ĐỘ FRONTEND — Component Architecture & State Management
-
-### 3.1 UI Components Tree
-
-```
-<App>
-  <RecommendationPage>
-    ├── <Header>                          // Logo + tagline
-    ├── <SearchForm>
-    │   ├── <LocationPicker>              // Nút GPS + hiển thị địa chỉ
-    │   ├── <RadiusSelector>              // Slider chọn bán kính
-    │   ├── <BudgetSlider>               // Slider chọn ngân sách
-    │   ├── <TagSelector>                // Checkbox/Chips multi-select
-    │   └── <ResultModeToggle>           // Switch "1 duy nhất" / "Top 3"
-    ├── <CTASubmitButton>                // Nút "Khám phá ngay"
-    ├── <LoadingSpinner>                 // Hiệu ứng vòng quay ngẫu nhiên
-    ├── <RecommendationResult>
-    │   ├── <PlaceCard> (×1 hoặc ×3)
-    │   │   ├── <PlaceImage>             // Ảnh cover
-    │   │   ├── <PlaceInfo>              // Tên, giá, khoảng cách
-    │   │   └── <TagBadges>              // Các tag trùng khớp
-    │   └── <ResultMeta>                 // Thông báo fallback nếu có
-    └── <EmptyState>                     // Khi không có kết quả
-  </RecommendationPage>
-</App>
-```
-
-### 3.2 State Management — Zustand Store
-
-```typescript
-// store/useRecommendationStore.ts
-
-interface RecommendationState {
-  // Input state
-  location: { lat: number; lng: number } | null;
-  locationAddress: string;
-  radiusKm: number;
-  priceMax: number;
-  selectedTags: string[];
-  resultMode: 'single' | 'top3';
-
-  // Output state
-  isLoading: boolean;
-  results: Place[];
-  meta: ResultMeta | null;
-  error: string | null;
-
-  // Actions
-  setLocation: (loc: { lat: number; lng: number }, address: string) => void;
-  setRadius: (km: number) => void;
-  setPriceMax: (price: number) => void;
-  toggleTag: (tag: string) => void;
-  setResultMode: (mode: 'single' | 'top3') => void;
-  fetchRecommendations: () => Promise<void>;
-  reset: () => void;
-}
-```
-
-### 3.3 Reason for Zustand over Context API:
-- **Performance:** Zustand chỉ re-render components subscribed to changed slice, tránh re-render toàn bộ tree như Context.
-- **Simplicity:** Không cần Provider wrapper, không boilerplate.
-- **DevTools:** Tích hợp Redux DevTools để debug state changes.
-- **Size:** ~1KB bundle size.
-
-### 3.4 Dữ liệu tĩnh — Danh sách Tags
-
-```typescript
-const DEFAULT_TAGS = [
-  { slug: 'hen-ho',       name: 'Hẹn hò',       emoji: '💑' },
-  { slug: 'gia-sinh-vien', name: 'Giá sinh viên', emoji: '🎓' },
-  { slug: 'rieng-tu',     name: 'Riêng tư',      emoji: '🤫' },
-  { slug: 'trong-nha',    name: 'Trong nhà',      emoji: '🏠' },
-  { slug: 'ngoai-troi',   name: 'Ngoài trời',    emoji: '🌳' },
-  { slug: 'the-thao',     name: 'Thể thao',       emoji: '⚽' },
-  { slug: 'van-dong',     name: 'Vận động',       emoji: '🏃' },
-  { slug: 'thu-gian',     name: 'Thư giãn',       emoji: '🧘' },
-  { slug: 'sang-trong',   name: 'Sang trọng',     emoji: '✨' },
-  { slug: 'thu-cung',     name: 'Thú cưng',       emoji: '🐶' },
-  { slug: 'gia-dinh',     name: 'Gia đình',       emoji: '👨‍👩‍👧‍👦' },
-  { slug: 'lam-viec',     name: 'Làm việc',       emoji: '💻' },
-];
-```
-
-### 3.5 Luồng xử lý Fallback ở FE
-
-```
-User click "Khám phá ngay"
-  → Gọi API lần 1 (fallback_level=0)
-  → Nếu meta.fallback_applied = true:
-      → Hiển thị toast với meta.message
-      → Kết quả vẫn hiển thị bình thường (BE đã xử lý fallback)
-  → Nếu results rỗng + fallback_level=5:
-      → Hiển thị EmptyState component
-```
-
-BE sẽ chịu trách nhiệm toàn bộ logic cascade fallback. FE chỉ cần gọi API 1 lần duy nhất và hiển thị kết quả + thông báo từ meta.
-
----
-
-## 4. CẤU TRÚC THƯ MỤC DỰ ÁN
-
-```
-hnaj/
-├── docs/
-│   └── PRD_TECH_SPEC.md          ← File này
-├── hnaj-be/                       ← Laravel Backend
-│   ├── cmd/server/main.go
-│   ├── internal/
-│   │   ├── handler/
-│   │   ├── model/
-│   │   ├── repository/
-│   │   ├── service/
-│   │   └── database/
-│   ├── migrations/
-│   ├── go.mod
-│   └── Makefile
-└── hnaj-fe/                       ← React.js + Vite + Tailwind CSS
-    ├── src/
-    │   ├── app/
-    │   ├── components/
-    │   ├── store/
-    │   ├── types/
-    │   └── lib/
-    ├── package.json
-    ├── vite.config.ts
-    ├── index.html
-    └── tailwind.config.ts
-```
-
----
-
-<sub>**Người biên soạn:** Cross-functional Team (BA + BE + FE) | **Phê duyệt:** Phạm Tuấn Đạt</sub>
+Các điểm TBD cần quyết định trước implementation tương ứng: score weights, geocoding provider, production media vendor, rate limits, upload limits, CSV limits, invite/idempotency TTL và ngày bắt đầu strict compatibility sau release.
