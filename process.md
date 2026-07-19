@@ -17,13 +17,15 @@
 
 ## Nền tảng backend và cơ sở dữ liệu
 
-- [ ] Hoàn thiện kết nối MySQL 8 và quy trình migration trong Docker.
-- [ ] Thiết kế/triển khai migration domain place, tag, amenity, media và giờ mở cửa.
+- [x] Hoàn thiện kết nối MySQL và quy trình migration trong Docker hiện tại.
+- [x] Triển khai migration category, normalized tag/pivot và external place identity.
+- [ ] Triển khai migration domain media và giờ mở cửa đầy đủ.
 - [ ] Triển khai migration recommendation history với retention 30 ngày.
 - [ ] Triển khai model, relation, factory và seed dữ liệu địa điểm.
+- [x] Seed category và tag taxonomy cố định cho AI classification.
 - [ ] Triển khai trạng thái nội dung: draft, pending_review, published, rejected, archived.
-- [ ] Đồng bộ ERD và data dictionary cho mọi thay đổi schema.
-- [ ] Viết test migration và ràng buộc MySQL quan trọng.
+- [x] Đồng bộ ERD và data dictionary cho mọi thay đổi schema.
+- [x] Viết test migration và ràng buộc MySQL quan trọng.
 
 ## API public và recommendation
 
@@ -39,8 +41,8 @@
 
 ## Xác thực và tài khoản
 
-- [ ] Cấu hình Sanctum SPA cookie/session và CSRF.
-- [ ] Triển khai đăng ký, đăng nhập, đăng xuất và endpoint người dùng hiện tại.
+- [x] Cấu hình Sanctum SPA cookie/session và CSRF.
+- [x] Triển khai đăng ký, đăng nhập, đăng xuất và endpoint người dùng hiện tại.
 - [ ] Triển khai quên/đặt lại mật khẩu sau khi contract được chốt.
 - [ ] Triển khai xóa tài khoản, xóa PII và ẩn danh dữ liệu theo policy.
 - [ ] Triển khai Google authentication sau khi contract được chốt.
@@ -58,10 +60,16 @@
 - [ ] Chốt OpenAPI cho role, invitation và ownership assignment.
 - [ ] Chốt OpenAPI cho CRUD place/tag/amenity/media/opening-hours.
 - [ ] Chốt OpenAPI cho submit/approve/reject/archive/restore.
-- [ ] Triển khai role, invitation và assignment owner.
-- [ ] Triển khai CRUD và workflow cho editor/admin/owner.
+- [x] Triển khai role catalog, user_roles và middleware kiểm tra admin/editor.
+- [ ] Triển khai invitation và assignment owner.
+- [x] Triển khai Admin import preview/confirm/status backend theo OpenAPI.
+- [x] Xây Admin UI import preview/confirm cơ bản cho editor/admin.
 - [ ] Chốt contract CSV import và idempotency trước khi triển khai import.
-- [ ] Triển khai import sau khi contract được chốt.
+- [x] Xây parser CSV streaming và bước preview staging.
+- [x] Dedup bằng external ID/fingerprint trước AI.
+- [x] Thêm AI classifier batch tối đa 10 dòng, retry và strict taxonomy IDs.
+- [x] Triển khai commit import atomic sau khi AI thành công; hủy batch khi AI thất bại.
+- [x] Ghi contract OpenAPI cho preview, confirm và status import.
 
 ## Analytics và quan sát hệ thống
 
@@ -76,8 +84,9 @@
 - [ ] Thiết lập API client bám sát OpenAPI và chuẩn hóa error/message key.
 - [ ] Xây dựng public flow mobile-first: vị trí, bộ lọc và recommendation loading/result.
 - [ ] Xây dựng trang chi tiết place và tag discovery.
-- [ ] Xây dựng auth, favorites và reviews cho user.
-- [ ] Xây dựng admin flow desktop-oriented sau khi API quản trị được chốt.
+- [x] Xây dựng auth session UI cho user.
+- [x] Xây dựng admin import flow desktop-oriented sau khi API quản trị được chốt.
+- [x] Tách giao diện `/admin` khỏi trải nghiệm public và mở rộng nhận diện cho ăn uống, cà phê, vui chơi.
 - [ ] Gửi analytics khi có consent.
 - [ ] Viết unit/component test và E2E cho các critical flow.
 
@@ -85,8 +94,8 @@
 
 - [ ] Cập nhật OpenAPI, recommendation policy và `docs/api/CHANGELOG.md` cùng mỗi thay đổi API quan sát được từ client.
 - [ ] Cập nhật migration, ERD và data dictionary cùng mỗi thay đổi schema.
-- [ ] Chạy backend test trong Docker.
-- [ ] Chạy frontend lint và build trong Docker.
+- [x] Chạy backend test trong Docker.
+- [x] Chạy frontend lint và build trong Docker.
 - [ ] Kiểm tra contract OpenAPI và các `$ref` liên quan.
 - [ ] Thiết lập CI cho test, lint, build và contract validation.
 - [ ] Hoàn thành kiểm thử acceptance cho public, user, owner, editor và admin flows.
@@ -98,3 +107,5 @@
 | --- | --- | --- | --- |
 | 2026-07-18 | Khởi tạo theo dõi tiến độ | Tạo checklist từ baseline tài liệu; chưa đánh dấu hoàn thành hạng mục nghiệp vụ. | Copilot |
 | 2026-07-18 | Làm mới giao diện public | Đổi nhận diện thành “Hôm nay ăn gì”, thiết kế lại màn recommendation theo phong cách ẩm thực Việt trẻ trung và mobile-first. | Copilot |
+| 2026-07-19 | Hoàn thiện empty state | Sửa hướng dẫn trạng thái chờ và bỏ mũi tên trang trí gây hiểu nhầm. | Copilot |
+| 2026-07-19 | Auth, Admin và định vị sản phẩm | Sửa runtime session MySQL/CORS, tách trang Admin, mở rộng public discovery và đặt tọa độ mặc định tại Hà Nội. | Copilot |

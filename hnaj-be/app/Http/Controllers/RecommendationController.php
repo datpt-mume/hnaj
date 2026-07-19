@@ -19,28 +19,20 @@ final class RecommendationController extends Controller
             'location.lat' => ['required', 'numeric', 'between:-90,90'],
             'location.lng' => ['required', 'numeric', 'between:-180,180'],
             'radius_km' => ['required', 'numeric', 'between:0.5,20'],
-            'price_max' => ['required', 'integer', 'min:0'],
+            'district_id' => ['sometimes', 'string', 'exists:administrative_areas,id'],
+            'category_slug' => ['sometimes', 'string', 'exists:categories,slug'],
+            'price_min' => ['sometimes', 'integer', 'min:0'],
+            'price_max' => ['sometimes', 'nullable', 'integer', 'min:0', 'gte:price_min'],
             'tags' => ['sometimes', 'array', 'max:20'],
-            'tags.*' => ['string', 'max:100'],
+            'tags.*' => ['string', 'max:100', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'],
             'limit' => ['sometimes', 'integer', 'in:1,3'],
         ]);
 
-        $places = $this->service->recommend($validated);
-        $radius = (float) $validated['radius_km'];
+        $recommendation = $this->service->recommend($validated);
 
         return response()->json([
             'success' => true,
-            'data' => [
-                'places' => $places,
-                'meta' => [
-                    'total_matched' => $places->count(),
-                    'fallback_applied' => false,
-                    'fallback_level' => 0,
-                    'query_radius_km' => $radius,
-                    'message_key' => $places->isEmpty() ? 'recommendation.no_results' : 'recommendation.results_found',
-                    'relaxed_tags' => false,
-                ],
-            ],
+            'data' => $recommendation,
         ]);
     }
 }

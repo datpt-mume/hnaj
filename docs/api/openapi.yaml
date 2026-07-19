@@ -12,10 +12,12 @@ security: []
 tags:
   - name: Auth
   - name: Recommendations
+  - name: Discovery Options
   - name: Tags
   - name: Places
   - name: Favorites
   - name: Reviews
+  - name: Admin Import
 paths:
   /auth/csrf-cookie:
     get:
@@ -73,9 +75,12 @@ paths:
             examples:
               default:
                 value:
-                  location: {lat: 10.762622, lng: 106.660172}
+                  district_id: 01J00000000000000000000000
+                  location: {lat: 21.028511, lng: 105.804817}
                   radius_km: 3
-                  price_max: 150000
+                  category_slug: cafe-do-uong
+                  price_min: 100000
+                  price_max: 300000
                   tags: [hen-ho, trong-nha]
                   limit: 3
       responses:
@@ -91,27 +96,116 @@ paths:
           $ref: '#/components/responses/RateLimited'
         '500':
           $ref: '#/components/responses/InternalError'
-  /tags:
-    get:
-      tags: [Tags]
-      operationId: listTags
-      summary: List active published tags
+  /admin/imports/places/preview:
+    post:
+      tags: [Admin Import]
+      operationId: previewPlaceImport
+      summary: Upload and preview a place CSV
+      security: [{sanctumCookie: []}]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: {type: string, format: binary}
+      responses:
+        '201':
+          description: Import preview created.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlaceImportPreviewResponse'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+  /admin/imports/places/{batchId}/confirm:
+    post:
+      tags: [Admin Import]
+      operationId: confirmPlaceImport
+      summary: Confirm and process a place import
+      security: [{sanctumCookie: []}]
       parameters:
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PerPage'
-        - in: query
-          name: search
-          schema: {type: string, maxLength: 100}
-        - in: query
-          name: group
-          schema: {type: string, maxLength: 100}
+        - in: path
+          name: batchId
+          required: true
+          schema: {$ref: '#/components/schemas/Ulid'}
+      responses:
+        '202':
+          description: Import classification and commit accepted.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlaceImportPreviewResponse'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/InternalError'}
+  /admin/imports/places/{batchId}:
+    get:
+      tags: [Admin Import]
+      operationId: getPlaceImport
+      summary: Get place import status and staged rows
+      security: [{sanctumCookie: []}]
+      parameters:
+        - in: path
+          name: batchId
+          required: true
+          schema: {$ref: '#/components/schemas/Ulid'}
       responses:
         '200':
-          description: Paginated tags.
+          description: Import status.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlaceImportPreviewResponse'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /tags:
+    get:
+      tags: [Discovery Options]
+      operationId: listTags
+      summary: List active tags and related suggestions for discovery
+      parameters:
+        - in: query
+          name: category
+          schema: {type: string, pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'}
+        - in: query
+          name: selected[]
+          schema:
+            type: array
+            maxItems: 20
+            items: {type: string, pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'}
+      responses:
+        '200':
+          description: Ordered tag workspace and up to six related tag slugs.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/TagListResponse'
+        '422': {$ref: '#/components/responses/ValidationError'}
+  /categories:
+    get:
+      tags: [Discovery Options]
+      operationId: listDiscoveryCategories
+      summary: List active discovery categories
+      responses:
+        '200':
+          description: Active categories in display order.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CategoryListResponse'}
+  /districts:
+    get:
+      tags: [Discovery Options]
+      operationId: listDiscoveryDistricts
+      summary: List active Hanoi districts and available place centroid
+      responses:
+        '200':
+          description: Districts ordered by name.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DistrictListResponse'}
   /places/{slug}:
     get:
       tags: [Places]
@@ -363,11 +457,14 @@ components:
         lng: {type: number, format: double, minimum: -180, maximum: 180}
     RecommendationRequest:
       type: object
-      required: [location, radius_km, price_max]
+      required: [location, radius_km]
       properties:
         location: {$ref: '#/components/schemas/Location'}
+        district_id: {$ref: '#/components/schemas/Ulid'}
+        category_slug: {type: string, pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'}
         radius_km: {type: number, format: double, minimum: 0.5, maximum: 20}
-        price_max: {type: integer, minimum: 0, description: Maximum average price per person in VND.}
+        price_min: {type: integer, minimum: 0, default: 0, description: Minimum average price per person in VND.}
+        price_max: {type: [integer, 'null'], minimum: 0, description: Maximum average price per person in VND; null means no upper bound.}
         tags:
           type: array
           maxItems: 20
@@ -426,6 +523,60 @@ components:
         group: {type: string}
         icon: {type: string, nullable: true}
         sort_order: {type: integer}
+        is_related: {type: boolean}
+    Category:
+      type: object
+      required: [id, name, slug, sort_order]
+      properties:
+        id: {$ref: '#/components/schemas/Ulid'}
+        name: {type: string}
+        slug: {type: string}
+        sort_order: {type: integer}
+    District:
+      type: object
+      required: [id, name, slug, center]
+      properties:
+        id: {$ref: '#/components/schemas/Ulid'}
+        name: {type: string}
+        slug: {type: string}
+        center:
+          oneOf:
+            - {$ref: '#/components/schemas/Location'}
+            - {type: 'null'}
+    PlaceImportRow:
+      type: object
+      required: [id, row_number, status]
+      properties:
+        id: {$ref: '#/components/schemas/Ulid'}
+        row_number: {type: integer, minimum: 1}
+        external_id: {type: string, nullable: true}
+        status: {type: string, enum: [pending, duplicate, invalid, classified, imported]}
+        normalized_data: {type: object, additionalProperties: true}
+        classification: {type: object, nullable: true, additionalProperties: true}
+        errors:
+          type: array
+          items: {type: string}
+    PlaceImportBatch:
+      type: object
+      required: [id, filename, status, total_rows, valid_rows, duplicate_rows, invalid_rows, rows]
+      properties:
+        id: {$ref: '#/components/schemas/Ulid'}
+        filename: {type: string}
+        status: {type: string, enum: [uploaded, previewed, classifying, completed, cancelled]}
+        total_rows: {type: integer, minimum: 0}
+        valid_rows: {type: integer, minimum: 0}
+        duplicate_rows: {type: integer, minimum: 0}
+        invalid_rows: {type: integer, minimum: 0}
+        error_message: {type: string, nullable: true}
+        rows:
+          type: array
+          items: {$ref: '#/components/schemas/PlaceImportRow'}
+    PlaceImportPreviewResponse:
+      allOf:
+        - {$ref: '#/components/schemas/SuccessResponse'}
+        - type: object
+          properties:
+            data: {$ref: '#/components/schemas/PlaceImportBatch'}
     PlaceResponse:
       allOf:
         - {$ref: '#/components/schemas/SuccessResponse'}
@@ -449,9 +600,22 @@ components:
           properties:
             data:
               type: object
+              required: [tags, related]
               properties:
-                items: {type: array, items: {$ref: '#/components/schemas/Tag'}}
-                pagination: {$ref: '#/components/schemas/Pagination'}
+                tags: {type: array, items: {$ref: '#/components/schemas/Tag'}}
+                related: {type: array, maxItems: 6, items: {type: string}}
+    CategoryListResponse:
+      allOf:
+        - {$ref: '#/components/schemas/SuccessResponse'}
+        - type: object
+          properties:
+            data: {type: array, items: {$ref: '#/components/schemas/Category'} }
+    DistrictListResponse:
+      allOf:
+        - {$ref: '#/components/schemas/SuccessResponse'}
+        - type: object
+          properties:
+            data: {type: array, items: {$ref: '#/components/schemas/District'} }
     Pagination:
       type: object
       required: [current_page, per_page, total, last_page]

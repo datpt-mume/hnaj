@@ -35,7 +35,7 @@ services:
     ports:
       - "${FE_PORT:-5173}:5173"
     environment:
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api}
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
     command: sh -c 'if [ -f package.json ] && [ ! -d node_modules/.bin ]; then npm ci; fi; npm run dev -- --host 0.0.0.0'
     depends_on:
       - be

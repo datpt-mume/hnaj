@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'ai_box' => [
+        'base_url' => env('AI_BOX_BASE_URL', 'https://api.ai-box.vn/v1'),
+        'api_key' => env('AI_BOX_API_KEY'),
+        'model' => env('AI_BOX_MODEL', 'deepseek-v4-flash'),
+        'timeout' => (int) env('AI_BOX_TIMEOUT', 60),
+    ],
+
 ];

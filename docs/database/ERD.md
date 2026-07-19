@@ -7,7 +7,11 @@ erDiagram
     USERS ||--o{ USER_ROLES : has
     ROLES ||--o{ USER_ROLES : grants
     USERS }o--o{ PLACES : manages
+    CATEGORIES ||--o{ PLACES : classifies
+    ADMINISTRATIVE_AREAS ||--o{ PLACES : district_or_ward
+    ADMINISTRATIVE_AREAS ||--o{ ADMINISTRATIVE_AREAS : contains
     PLACES }o--o{ TAGS : classified_by
+    PLACES ||--o{ PLACE_EXTERNAL_IDS : identifies
     PLACES ||--o{ MEDIA : contains
     PLACES ||--o{ OPENING_HOURS : opens
     USERS ||--o{ FAVORITES : creates
@@ -29,7 +33,10 @@ erDiagram
     ROLES { string id PK string name UK }
     USER_ROLES { string user_id FK string role_id FK }
     PLACES { string id PK string slug UK string status decimal latitude decimal longitude }
+    ADMINISTRATIVE_AREAS { string id PK string name string type string parent_id FK string city boolean is_active }
+    CATEGORIES { string id PK string slug UK string name boolean is_active }
     TAGS { string id PK string slug UK string status string group }
+    PLACE_EXTERNAL_IDS { string id PK string place_id FK string provider string external_id UK }
     MEDIA { string id PK string owner_type string owner_id string path }
     OPENING_HOURS { string id PK string place_id FK int weekday time opens_at time closes_at }
     FAVORITES { string user_id FK string place_id FK }
@@ -41,7 +48,7 @@ erDiagram
     ANALYTICS_EVENTS { string id PK string user_id nullable string anonymous_id nullable string event_name json properties }
 ```
 
-Implementation note: the first recommendation slice uses a nullable JSON `places.tags` field in the scaffold migration. The normalized `tags`/pivot design above remains the target and must replace it in the taxonomy phase.
+Implementation note: taxonomy is now normalized through `categories`, `tags` and `place_tag`. `places.category_id` stores exactly one primary category. External source identifiers are stored separately so Google identifiers can be deduplicated without coupling the place model to one provider.
 
 ## Rules
 

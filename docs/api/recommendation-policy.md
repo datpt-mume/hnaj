@@ -2,15 +2,17 @@
 
 ## Trạng thái
 
-Đây là policy mục tiêu. Backend chưa triển khai recommendation domain trong scaffold hiện tại.
+Backend đã có recommendation cơ bản. Các quy tắc open-now, chống lặp 24 giờ, Bayesian rating và weighted random vẫn là mục tiêu chưa hoàn thiện.
 
 ## Eligibility
 
-Recommendation chỉ xét Place đã `published`, chưa bị archive/soft-delete và đang mở theo timezone của địa điểm. Budget là hard constraint ở mọi cấp; place phù hợp khi giá trung bình của khoảng `price_min`/`price_max` không vượt `price_max` trong request.
+Recommendation chỉ xét Place đã `published` và chưa soft-delete. Quận, category và khoảng ngân sách là hard constraint ở mọi cấp. Place phù hợp ngân sách khi giá trung bình của `price_min`/`price_max` nằm trong khoảng request; `price_max: null` nghĩa là không có trần.
+
+`location` là mốc tính bán kính. Frontend ưu tiên GPS khi khách cho phép; nếu không, dùng centroid các place published trong quận do `/districts` trả về và phải nói rõ mốc này. Quận vẫn được lọc cứng dù GPS nằm gần ranh giới.
 
 ## Tags và ranking
 
-Tags người dùng chọn được match theo OR. Số tag khớp là một thành phần điểm. Weighted random ưu tiên theo thứ tự:
+Tag request luôn dùng slug và được match theo OR. Related tags được xếp theo số lần đồng xuất hiện trên place published cùng category. Toàn bộ tag vẫn được trả về; tag selected và related chỉ được đẩy lên trước.
 
 1. mức độ khớp tag;
 2. khoảng cách;

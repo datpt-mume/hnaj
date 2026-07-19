@@ -5,6 +5,8 @@ RUN apt-get update \
     && docker-php-ext-install pdo_mysql \
     && rm -rf /var/lib/apt/lists/*
 
+RUN printf 'upload_max_filesize=500M\npost_max_size=512M\n' > /usr/local/etc/php/conf.d/uploads.ini
+
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 COPY . .
