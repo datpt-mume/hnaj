@@ -23,12 +23,13 @@ A user may hold multiple roles. Owner/editor/admin accounts are invited by an ad
 | `places` | One branch/location per record | ULID public ID; unique slug; WGS 84 coordinates; nullable `district_id` and `ward_id` FKs; price integer VND; publication status; soft delete. |
 | `categories` | High-level place classification | One active primary category per place; unique slug; seeded system taxonomy. |
 | `tags` | Public filter taxonomy | Unique slug; group; icon/emoji; sort order; active/published status. |
+| `category_tag` | System taxonomy mapping | Unique `(category_id, tag_id)`; determines the active public tags returned for a selected category, including before any place has been imported. |
 | `place_tag` | Place/tag relation | Unique `(place_id, tag_id)`. |
 | `place_external_ids` | Provider identifiers used by import deduplication | Unique `(provider, external_id)` and one identifier per provider/place; optional normalized fingerprint. |
 | `media` | Place/review images | Storage abstraction path/URL metadata; cover and sort order; no binary in DB. |
 | `opening_hours` | Weekly opening schedule | Weekday and local times; recommendation can filter currently open. |
 
-The recommendation price rule uses the average of `price_min` and `price_max`. Coordinates and radius are measured in kilometers. `places.category_id` is the primary category; tags are many-to-many. The current import taxonomy is seeded by `TaxonomySeeder` and AI may only return active IDs from these tables.
+The recommendation price rule uses the average of `price_min` and `price_max`. Coordinates and radius are measured in kilometers. `places.category_id` is the primary category; tags are many-to-many. `category_tag` is the curated discovery taxonomy and `place_tag` records each place's actual tags. The current import taxonomy is seeded by `TaxonomySeeder` and AI may only return active IDs from these tables.
 
 ## User behavior
 

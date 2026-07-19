@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import type { FormEvent } from 'react'
+import { useEffect, useId, useState } from 'react'
+import type { CSSProperties, FormEvent } from 'react'
 import './App.css'
 
 type RecommendationRequest = {
@@ -104,6 +104,74 @@ async function getCurrentUser(): Promise<AuthUser | null> {
   }
 }
 
+const HERO_OPTIONS = [
+  {
+    id: 'an-uong',
+    label: 'Ăn uống',
+    title: 'Ăn uống',
+    description: 'Khám phá quán ăn theo khu vực, ngân sách và khẩu vị bạn chọn.',
+    image:
+      'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1400&q=80',
+    chip: 'Món ngon gần bạn',
+  },
+  {
+    id: 'vui-choi',
+    label: 'Vui chơi',
+    title: 'Vui chơi',
+    description: 'Tìm board game và điểm tụ họp phù hợp cho nhóm bạn hôm nay.',
+    image: '/hero/board-game.jpg',
+    chip: 'Board game · tụ họp',
+  },
+  {
+    id: 'the-thao',
+    label: 'Thể thao',
+    title: 'Thể thao',
+    description: 'Chọn nơi bắn cung và vận động theo vị trí, khoảng cách bạn muốn đi.',
+    image: '/hero/archery.jpg',
+    chip: 'Bắn cung · vận động',
+  },
+] as const
+
+const HERO_ROTATE_MS = 4200
+
+const CATEGORY_ACCENTS: Record<string, { hue: string; soft: string; deep: string; emoji: string }> = {
+  'an-uong': { hue: '#e4572e', soft: '#ffe3d6', deep: '#9c2f12', emoji: '🍜' },
+  'cafe-do-uong': { hue: '#c47b2b', soft: '#f8e6c8', deep: '#7a4a16', emoji: '☕' },
+  'bar-nightlife': { hue: '#7b3fe4', soft: '#ebe0ff', deep: '#4a1f99', emoji: '🍸' },
+  'ngoai-troi': { hue: '#1f8a5b', soft: '#d8f3e5', deep: '#0f4f34', emoji: '🌿' },
+  'gaming-giai-tri': { hue: '#2f6fed', soft: '#dce8ff', deep: '#1a3f99', emoji: '🎮' },
+  'van-hoa-nghe-thuat': { hue: '#d63d7a', soft: '#ffd9e8', deep: '#8a1848', emoji: '🎭' },
+  'suc-khoe-thu-gian': { hue: '#0f9d8a', soft: '#d4f5ef', deep: '#0a5c51', emoji: '🧘' },
+  'mua-sam': { hue: '#e09f1f', soft: '#fff0c8', deep: '#8a5d0a', emoji: '🛍️' },
+}
+
+const BUDGET_OPTIONS = [
+  { value: 'under-100', label: 'Dưới 100k', hint: 'Nhẹ ví' },
+  { value: '100-300', label: '100–300k', hint: 'Vừa túi' },
+  { value: '300-500', label: '300–500k', hint: 'Thoải mái' },
+  { value: 'over-500', label: 'Trên 500k', hint: 'Chơi lớn' },
+] as const
+
+const RADIUS_OPTIONS = [1, 3, 5, 10, 20] as const
+
+function categoryAccent(slug?: string | null) {
+  if (!slug) return { hue: '#e4572e', soft: '#ffe3d6', deep: '#9c2f12', emoji: '✨' }
+  return CATEGORY_ACCENTS[slug] ?? { hue: '#e4572e', soft: '#ffe3d6', deep: '#9c2f12', emoji: '✨' }
+}
+
+function placeBackdrop(place: Place): { accent: ReturnType<typeof categoryAccent>; style: CSSProperties } {
+  const accent = categoryAccent(place.category?.slug)
+  return {
+    accent,
+    style: {
+      ['--result-hue' as string]: accent.hue,
+      ['--result-soft' as string]: accent.soft,
+      ['--result-deep' as string]: accent.deep,
+      ['--result-image' as string]: place.cover_image ? `url("${place.cover_image}")` : 'none',
+    },
+  }
+}
+
 function App() {
   const isAdminPage = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/')
   const [radius, setRadius] = useState(3)
@@ -128,15 +196,46 @@ function App() {
   const [importBatch, setImportBatch] = useState<ImportBatch | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
   const [isImporting, setIsImporting] = useState(false)
+  const [heroOptionIndex, setHeroOptionIndex] = useState(0)
+  const [isResultOpen, setIsResultOpen] = useState(false)
+  const resultTitleId = useId()
   const selectedGroups = selectedTags
     .map((slug) => availableTags.find((tag) => tag.slug === slug)?.group)
     .filter((group): group is string => Boolean(group))
   const relatedTagOrder = relatedTags.length > 0
     ? relatedTags
     : availableTags.filter((tag) => selectedGroups.includes(tag.group) && !selectedTags.includes(tag.slug)).map((tag) => tag.slug)
+  const activeHeroOption = HERO_OPTIONS[heroOptionIndex] ?? HERO_OPTIONS[0]
+  const featuredPlace = result?.places[0] ?? null
+  const selectedDistrict = districts.find((item) => item.id === districtId) ?? null
+  const selectedCategory = categories.find((item) => item.slug === categorySlug) ?? null
+  const selectedBudget = BUDGET_OPTIONS.find((item) => item.value === budget) ?? BUDGET_OPTIONS[1]
+  const moodAccent = categoryAccent(selectedCategory?.slug ?? categorySlug)
+  const featuredBackdrop = featuredPlace
+    ? placeBackdrop(featuredPlace)
+    : {
+        accent: moodAccent,
+        style: {
+          ['--result-hue' as string]: moodAccent.hue,
+          ['--result-soft' as string]: moodAccent.soft,
+          ['--result-deep' as string]: moodAccent.deep,
+          ['--result-image' as string]: 'none',
+        } satisfies CSSProperties,
+      }
 
   useEffect(() => {
     if (isAdminPage) void getCurrentUser().then(setUser)
+  }, [isAdminPage])
+
+  useEffect(() => {
+    if (isAdminPage) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    const timer = window.setInterval(() => {
+      setHeroOptionIndex((current) => (current + 1) % HERO_OPTIONS.length)
+    }, HERO_ROTATE_MS)
+
+    return () => window.clearInterval(timer)
   }, [isAdminPage])
 
   useEffect(() => {
@@ -161,6 +260,20 @@ function App() {
       .then((data) => { setAvailableTags(data.tags); setRelatedTags(data.related) })
       .catch(() => setOptionsError('Chưa tải được tag cho category này.'))
   }, [categorySlug, isAdminPage, selectedTags])
+
+  useEffect(() => {
+    if (!isResultOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsResultOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [isResultOpen])
 
   function requestCurrentLocation() {
     if (!navigator.geolocation) {
@@ -218,12 +331,12 @@ function App() {
     } catch (requestError) { setImportError(requestError instanceof Error ? requestError.message : 'import.confirm_failed') } finally { setIsImporting(false) }
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  async function requestRecommendation() {
     const district = districts.find((item) => item.id === districtId)
     const location = gpsLocation || district?.center
     if (!district || !location || !categorySlug) {
       setError('Chọn khu vực và một kiểu đi chơi để tiếp tục.')
+      setIsResultOpen(true)
       return
     }
     const budgets: Record<string, [number, number | null]> = { 'under-100': [0, 99999], '100-300': [100000, 300000], '300-500': [300000, 500000], 'over-500': [500001, null] }
@@ -231,6 +344,7 @@ function App() {
     setIsLoading(true)
     setError(null)
     setResult(null)
+    setIsResultOpen(true)
     try {
       setResult(await recommend({
         location,
@@ -240,7 +354,7 @@ function App() {
         price_min: priceMin,
         price_max: priceMax,
         tags: selectedTags,
-        limit: 3,
+        limit: 1,
       }))
     } catch (requestError) {
       setResult(null)
@@ -250,71 +364,515 @@ function App() {
     }
   }
 
+  function closeResultModal() {
+    setIsResultOpen(false)
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    await requestRecommendation()
+  }
+
   if (isAdminPage) {
     const canImport = user?.roles.some((role) => role === 'admin' || role === 'editor') ?? false
 
     return (
       <main className="admin-shell">
-        <nav className="admin-nav"><a className="brand" href="/"><span className="brand-mark">H?</span><span>Quản trị Hôm nay ăn gì</span></a><a href="/">Mở trang khách</a></nav>
+        <div className="grain" aria-hidden="true" />
+        <nav className="admin-nav">
+          <a className="brand" href="/">
+            <span className="brand-mark" aria-hidden="true">H?</span>
+            <span>Quản trị Hôm nay ăn gì</span>
+          </a>
+          <a className="admin-nav-link" href="/">Mở trang khách</a>
+        </nav>
         <section className="admin-page">
-          <header className="admin-header"><div><p className="admin-eyebrow">Dữ liệu</p><h1>Quản lý địa điểm</h1></div><p>Kiểm tra và nhập dữ liệu địa điểm từ tệp CSV.</p></header>
-          {!user && <form className="admin-login" onSubmit={handleLogin}><div><h2>Đăng nhập</h2><p>Dành cho quản trị viên và biên tập viên.</p></div><label>Email<input name="email" type="email" autoComplete="email" required /></label><label>Mật khẩu<input name="password" type="password" autoComplete="current-password" required /></label>{loginError && <p className="notice">{loginError}</p>}<button type="submit" disabled={isLoggingIn}>{isLoggingIn ? 'Đang đăng nhập...' : 'Đăng nhập'}</button></form>}
-          {user && !canImport && <section className="admin-denied"><h2>Không đủ quyền truy cập</h2><p>Tài khoản {user.email} không có vai trò admin hoặc editor.</p><button type="button" onClick={handleLogout}>Đăng xuất</button></section>}
-          {user && canImport && <section className="admin-workspace"><div className="admin-toolbar"><div><h2>Nhập dữ liệu CSV</h2><p>Hệ thống sẽ kiểm tra dữ liệu trước khi ghi nhận.</p></div><button className="admin-logout" type="button" onClick={handleLogout}>{user.name} · Đăng xuất</button></div><form className="import-form" onSubmit={handleImportPreview} aria-busy={isImporting}><input type="file" accept=".csv,.txt" disabled={isImporting} onChange={(event) => setImportFile(event.target.files?.[0] || null)} /><button type="submit" disabled={!importFile || isImporting}>{isImporting && <span className="admin-spinner" aria-hidden="true" />}{isImporting ? 'Đang tải lên và kiểm tra...' : 'Kiểm tra tệp'}</button>{isImporting && <p className="import-progress" role="status">Tệp lớn có thể cần vài phút. Vui lòng giữ trang này mở.</p>}</form>{importError && <p className="notice">{importError}</p>}{importBatch && <div className="import-summary"><p><strong>{importBatch.filename}</strong> · {importBatch.status}</p><div><span>{importBatch.total_rows} dòng</span><span>{importBatch.valid_rows} hợp lệ</span><span>{importBatch.duplicate_rows} trùng</span><span>{importBatch.invalid_rows} lỗi</span></div><button type="button" onClick={handleImportConfirm} disabled={isImporting || importBatch.status !== 'previewed'}>{isImporting ? 'Đang xử lý...' : 'Nhập dữ liệu'}</button></div>}</section>}
+          <header className="admin-header">
+            <div>
+              <p className="admin-eyebrow">Dữ liệu</p>
+              <h1>Quản lý địa điểm</h1>
+            </div>
+            <p>Kiểm tra và nhập dữ liệu địa điểm từ tệp CSV.</p>
+          </header>
+
+          {!user && (
+            <form className="admin-login panel" onSubmit={handleLogin}>
+              <div>
+                <h2>Đăng nhập</h2>
+                <p>Dành cho quản trị viên và biên tập viên.</p>
+              </div>
+              <label>
+                Email
+                <input name="email" type="email" autoComplete="email" required />
+              </label>
+              <label>
+                Mật khẩu
+                <input name="password" type="password" autoComplete="current-password" required />
+              </label>
+              {loginError && <p className="notice">{loginError}</p>}
+              <button className="primary-button" type="submit" disabled={isLoggingIn}>
+                <span>{isLoggingIn ? 'Đang đăng nhập...' : 'Đăng nhập'}</span>
+              </button>
+            </form>
+          )}
+
+          {user && !canImport && (
+            <section className="admin-denied panel">
+              <h2>Không đủ quyền truy cập</h2>
+              <p>Tài khoản {user.email} không có vai trò admin hoặc editor.</p>
+              <button className="secondary-button" type="button" onClick={handleLogout}>Đăng xuất</button>
+            </section>
+          )}
+
+          {user && canImport && (
+            <section className="admin-workspace panel">
+              <div className="admin-toolbar">
+                <div>
+                  <h2>Nhập dữ liệu CSV</h2>
+                  <p>Hệ thống sẽ kiểm tra dữ liệu trước khi ghi nhận.</p>
+                </div>
+                <button className="admin-logout" type="button" onClick={handleLogout}>
+                  {user.name} · Đăng xuất
+                </button>
+              </div>
+              <form className="import-form" onSubmit={handleImportPreview} aria-busy={isImporting}>
+                <input
+                  type="file"
+                  accept=".csv,.txt"
+                  disabled={isImporting}
+                  onChange={(event) => setImportFile(event.target.files?.[0] || null)}
+                />
+                <button className="primary-button" type="submit" disabled={!importFile || isImporting}>
+                  {isImporting && <span className="admin-spinner" aria-hidden="true" />}
+                  <span>{isImporting ? 'Đang tải lên và kiểm tra...' : 'Kiểm tra tệp'}</span>
+                </button>
+                {isImporting && (
+                  <p className="import-progress" role="status">
+                    Tệp lớn có thể cần vài phút. Vui lòng giữ trang này mở.
+                  </p>
+                )}
+              </form>
+              {importError && <p className="notice">{importError}</p>}
+              {importBatch && (
+                <div className="import-summary">
+                  <p>
+                    <strong>{importBatch.filename}</strong> · {importBatch.status}
+                  </p>
+                  <div className="import-stats">
+                    <span>{importBatch.total_rows} dòng</span>
+                    <span>{importBatch.valid_rows} hợp lệ</span>
+                    <span>{importBatch.duplicate_rows} trùng</span>
+                    <span>{importBatch.invalid_rows} lỗi</span>
+                  </div>
+                  <button
+                    className="primary-button"
+                    type="button"
+                    onClick={handleImportConfirm}
+                    disabled={isImporting || importBatch.status !== 'previewed'}
+                  >
+                    <span>{isImporting ? 'Đang xử lý...' : 'Nhập dữ liệu'}</span>
+                  </button>
+                </div>
+              )}
+            </section>
+          )}
         </section>
       </main>
     )
   }
 
   return (
-    <main>
+    <main className="public-shell">
+      <div className="grain" aria-hidden="true" />
       <a className="skip-link" href="#recommendation-form">Chuyển đến bộ lọc</a>
+
       <nav className="nav" aria-label="Điều hướng chính">
-        <a className="brand" href="/" aria-label="Hôm nay ăn gì - Trang chủ"><span className="brand-mark">H?</span><span>Hôm nay ăn gì</span></a>
-        <div className="nav-actions"><span className="nav-note">Ăn uống · Cà phê · Vui chơi</span></div>
+        <a className="brand" href="/" aria-label="Hôm nay ăn gì - Trang chủ">
+          <span className="brand-mark" aria-hidden="true">H?</span>
+          <span>Hôm nay ăn gì</span>
+        </a>
+        <div className="nav-actions">
+          <span className="nav-note">Ăn uống · Cà phê · Vui chơi</span>
+          <a className="nav-cta" href="#recommendation-form">Chọn ngay</a>
+        </div>
       </nav>
+
       <header className="hero">
         <div className="hero-copy">
           <p className="kicker">Gợi ý địa điểm tại Hà Nội</p>
-          <h1>Bạn không biết đi đâu<br /><em>hay ăn gì?</em></h1>
-          <p className="intro">Hãy để Hôm nay ăn gì giúp bạn. Chọn khu vực, ngân sách và điều bạn đang muốn, còn lại để Hôm nay ăn gì lo nhé!</p>
-          <a className="hero-link" href="#recommendation-form">Bắt đầu chọn <span aria-hidden="true">↓</span></a>
+          <h1>
+            Bạn không biết đi đâu
+            <br />
+            <em>hay ăn gì?</em>
+          </h1>
+          <p className="intro">
+            Chọn khu vực, ngân sách và điều bạn đang muốn. Phần còn lại để Hôm nay ăn gì lo.
+          </p>
+          <a className="hero-link" href="#recommendation-form">
+            <span>Bắt đầu chọn</span>
+            <span className="hero-link-icon" aria-hidden="true">↓</span>
+          </a>
         </div>
-        <div className="hero-visual" aria-label="Một tô phở Việt Nam hấp dẫn" role="img">
-          <div className="food-stamp"><strong>03</strong><span>gợi ý<br />mỗi lượt</span></div><p>Ăn · Uống · Chơi</p>
-        </div>
-      </header>
-      <section className="workspace" id="recommendation-form">
-        <form className="controls" onSubmit={handleSubmit}>
-          <div className="form-heading"><span>01</span><div><h2>Bạn muốn đi đâu?</h2><p>Chọn vài điều quan trọng với bạn.</p></div></div>
-          {optionsError && <p className="notice">{optionsError}</p>}
-          <label>Quận muốn đi<select value={districtId} onChange={(event) => { setDistrictId(event.target.value); setGpsLocation(null); setLocationStatus('Đang dùng tâm quận') }} required><option value="">Chọn một quận</option>{districts.map((district) => <option key={district.id} value={district.id} disabled={!district.center}>{district.name}{district.center ? '' : ' · chưa có dữ liệu'}</option>)}</select></label>
-          <div className="location-row"><div><strong>Mốc tính khoảng cách</strong><span>{locationStatus}</span></div><button className="secondary-button" type="button" onClick={requestCurrentLocation} disabled={!districtId}>Dùng GPS</button></div>
-          <fieldset><legend>Đi xa tối đa</legend><div className="choice-row">{[1, 3, 5, 10, 20].map((value) => <button key={value} type="button" className={radius === value ? 'choice active' : 'choice'} aria-pressed={radius === value} onClick={() => setRadius(value)}>{value} km</button>)}</div></fieldset>
-          <fieldset><legend>Hôm nay bạn muốn</legend><div className="category-grid">{categories.map((category) => <button key={category.id} type="button" className={categorySlug === category.slug ? 'category-choice active' : 'category-choice'} aria-pressed={categorySlug === category.slug} onClick={() => { setCategorySlug(category.slug); setSelectedTags([]) }}>{category.name}</button>)}</div></fieldset>
-          {categorySlug && <fieldset className="tag-fieldset"><legend>Bạn đang muốn gì?</legend><p className="field-hint">Chọn một hoặc vài điều bạn thích.</p>{selectedTags.length > 0 && <div className="selected-preferences"><p className="selected-label">Đã chọn <span>{selectedTags.length}</span></p><div className="selected-rail" aria-label="Sở thích đã chọn">{selectedTags.map((slug) => { const tag = availableTags.find((item) => item.slug === slug); return tag ? <button key={tag.id} type="button" className="preference-chip selected" aria-pressed="true" onClick={() => setSelectedTags((current) => current.filter((item) => item !== slug))}>{tag.name}<span aria-hidden="true">×</span></button> : null })}</div></div>}<p className="browse-label">{selectedTags.length > 0 ? 'Lướt để thêm lựa chọn' : 'Lướt để chọn'}</p><div className="tag-rail" aria-label="Sở thích chưa chọn">{[...availableTags].filter((tag) => !selectedTags.includes(tag.slug)).sort((left, right) => { const leftRelated = relatedTagOrder.indexOf(left.slug); const rightRelated = relatedTagOrder.indexOf(right.slug); if (leftRelated !== -1 || rightRelated !== -1) return leftRelated === -1 ? 1 : rightRelated === -1 ? -1 : leftRelated - rightRelated; return left.sort_order - right.sort_order }).map((tag) => { const related = relatedTagOrder.includes(tag.slug); return <button key={tag.id} type="button" className={`preference-chip${related ? ' related' : ''}`} aria-pressed="false" onClick={() => setSelectedTags((current) => [...current, tag.slug])}>{tag.name}</button>})}</div></fieldset>}
-          <fieldset><legend>Ngân sách mỗi người</legend><div className="budget-grid">{[['under-100', 'Dưới 100k'], ['100-300', '100–300k'], ['300-500', '300–500k'], ['over-500', 'Trên 500k']].map(([value, label]) => <button key={value} type="button" className={budget === value ? 'choice active' : 'choice'} aria-pressed={budget === value} onClick={() => setBudget(value)}>{label}</button>)}</div></fieldset>
-          <button type="submit" disabled={isLoading || !districtId || !categorySlug}><span>{isLoading ? 'Đang tìm địa điểm...' : 'Xem gợi ý'}</span><span aria-hidden="true">→</span></button>
-        </form>
-        <section className="results" aria-live="polite">
-          <div className="results-heading"><span>02</span><h2>Địa điểm dành cho bạn</h2></div>
-          {error && <p className="notice">Không thể tải gợi ý: {error}</p>}
-          {isLoading && <div className="loading-list" aria-label="Đang tìm quán"><i /><i /><i /></div>}
-          {!result && !error && !isLoading && <div className="empty"><strong>Chưa biết đi đâu cũng không sao.</strong><p>Chọn khoảng cách, ngân sách và trải nghiệm đang muốn, rồi để tụi mình gợi ý.</p></div>}
-          {result && result.places.length === 0 && <p className="empty">Chưa tìm thấy nơi phù hợp trong phạm vi này.</p>}
-          {result?.meta.fallback_applied && <p className="result-note">Đã mở rộng phạm vi tới {result.meta.query_radius_km} km để đủ lựa chọn.</p>}
-          <div className="place-list">
-            {result?.places.map((place, index) => (
-              <article className="place" key={place.id}>
-                <span className="place-index">0{index + 1}</span>
-                {place.cover_image && <img src={place.cover_image} alt="" />}
-                <div><p className="place-category">{place.category?.name} · {place.district?.name}</p><h3>{place.name}</h3><p>{place.address}</p><p className="metadata">{place.distance_km.toFixed(1)} km <span>•</span> {place.price_display} <span>•</span> ★ {place.rating.toFixed(1)}</p>{place.matched_tags.length > 0 && <div className="matched-tags">{place.tags.filter((tag) => place.matched_tags.includes(tag.slug)).map((tag) => <span key={tag.slug}>{tag.name}</span>)}</div>}</div>
-              </article>
+
+        <div className="hero-stage">
+          <div
+            className="hero-visual"
+            aria-label={`${activeHeroOption.title}: ${activeHeroOption.description}`}
+            role="img"
+          >
+            {HERO_OPTIONS.map((option, index) => (
+              <div
+                key={option.id}
+                className={`hero-visual-slide${index === heroOptionIndex ? ' is-active' : ''}`}
+                style={{ backgroundImage: `url("${option.image}")` }}
+                aria-hidden={index !== heroOptionIndex}
+              />
+            ))}
+            <p className="hero-chip" key={activeHeroOption.id}>{activeHeroOption.chip}</p>
+          </div>
+          <div className="hero-aside" aria-label="Ba hướng khám phá">
+            {HERO_OPTIONS.map((option, index) => (
+              <button
+                key={option.id}
+                type="button"
+                className={`hero-card${index === heroOptionIndex ? ' is-active' : ''}`}
+                onClick={() => setHeroOptionIndex(index)}
+                aria-pressed={index === heroOptionIndex}
+              >
+                <span className="hero-card-media" aria-hidden="true">
+                  <img src={option.image} alt="" loading="lazy" />
+                </span>
+                <span className="hero-card-copy">
+                  <span className="hero-card-index">{String(index + 1).padStart(2, '0')}</span>
+                  <strong>{option.title}</strong>
+                  <span className="hero-card-desc">{option.description}</span>
+                </span>
+                {index === heroOptionIndex && (
+                  <span className="hero-card-progress" aria-hidden="true" />
+                )}
+              </button>
             ))}
           </div>
-        </section>
+        </div>
+      </header>
+
+      <section className="workspace" id="recommendation-form">
+        <form className="controls panel discovery-form" onSubmit={handleSubmit}>
+          <div className="form-heading">
+            <div className="form-heading-copy">
+              <p className="form-kicker">Bộ lọc đi chơi</p>
+              <h2>Bạn muốn đi đâu?</h2>
+              <p>Chọn khu vực, mood, sở thích và ngân sách — một gợi ý sẽ bật lên ngay.</p>
+            </div>
+            <div className="form-summary" aria-live="polite">
+              <span>{selectedDistrict?.name || 'Chưa chọn quận'}</span>
+              <span>{selectedCategory?.name || 'Chưa chọn mood'}</span>
+              <span>{selectedBudget.label}</span>
+              <span>≤ {radius} km</span>
+            </div>
+          </div>
+
+          {optionsError && <p className="notice">{optionsError}</p>}
+
+          <div className="form-board">
+            <section className="picker-block area-block">
+              <div className="picker-head">
+                <strong>Khu vực</strong>
+                <span>{locationStatus}</span>
+              </div>
+
+              <div className="district-menu" role="listbox" aria-label="Quận muốn đi">
+                {districts.map((district) => {
+                  const active = districtId === district.id
+                  return (
+                    <button
+                      key={district.id}
+                      type="button"
+                      role="option"
+                      aria-selected={active}
+                      className={`district-tile${active ? ' is-active' : ''}${district.center ? '' : ' is-disabled'}`}
+                      disabled={!district.center}
+                      onClick={() => {
+                        setDistrictId(district.id)
+                        setGpsLocation(null)
+                        setLocationStatus('Đang dùng tâm quận')
+                      }}
+                    >
+                      <span className="district-tile-name">{district.name}</span>
+                      <span className="district-tile-meta">{district.center ? 'Sẵn sàng' : 'Chưa có tâm'}</span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              <div className="area-tools">
+                <button
+                  className="ghost-button gps-button"
+                  type="button"
+                  onClick={requestCurrentLocation}
+                  disabled={!districtId}
+                >
+                  {gpsLocation ? 'Đang dùng GPS' : 'Dùng GPS hiện tại'}
+                </button>
+
+                <div className="radius-track" role="group" aria-label="Đi xa tối đa">
+                  {RADIUS_OPTIONS.map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className={`radius-stop${radius === value ? ' is-active' : ''}`}
+                      aria-pressed={radius === value}
+                      onClick={() => setRadius(value)}
+                    >
+                      <span className="radius-dot" aria-hidden="true" />
+                      <span>{value} km</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <section className="picker-block mood-block">
+              <div className="picker-head">
+                <strong>Hôm nay muốn gì</strong>
+                <span>Chạm một mood</span>
+              </div>
+              <div className="mood-grid" role="group" aria-label="Hôm nay bạn muốn">
+                {categories.map((category) => {
+                  const accent = categoryAccent(category.slug)
+                  const active = categorySlug === category.slug
+                  return (
+                    <button
+                      key={category.id}
+                      type="button"
+                      className={`mood-card${active ? ' is-active' : ''}`}
+                      aria-pressed={active}
+                      style={{
+                        ['--mood-hue' as string]: accent.hue,
+                        ['--mood-soft' as string]: accent.soft,
+                        ['--mood-deep' as string]: accent.deep,
+                      }}
+                      onClick={() => {
+                        setCategorySlug(category.slug)
+                        setSelectedTags([])
+                      }}
+                    >
+                      <span className="mood-emoji" aria-hidden="true">{accent.emoji}</span>
+                      <span className="mood-name">{category.name}</span>
+                      <span className="mood-check" aria-hidden="true">{active ? '✓' : ''}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+
+            {categorySlug && (
+              <section className="picker-block taste-block">
+                <div className="picker-head">
+                  <strong>Sở thích</strong>
+                  <span>{selectedTags.length > 0 ? `Đã chọn ${selectedTags.length}` : 'Tuỳ chọn · chạm để gắn'}</span>
+                </div>
+                {selectedTags.length > 0 && (
+                  <div className="taste-selected" aria-label="Sở thích đã chọn">
+                    {selectedTags.map((slug) => {
+                      const tag = availableTags.find((item) => item.slug === slug)
+                      return tag ? (
+                        <button
+                          key={tag.id}
+                          type="button"
+                          className="taste-pill is-on"
+                          aria-pressed="true"
+                          onClick={() => setSelectedTags((current) => current.filter((item) => item !== slug))}
+                        >
+                          {tag.name}
+                          <span aria-hidden="true">×</span>
+                        </button>
+                      ) : null
+                    })}
+                  </div>
+                )}
+                <div className="taste-board" aria-label="Sở thích chưa chọn">
+                  {[...availableTags]
+                    .filter((tag) => !selectedTags.includes(tag.slug))
+                    .sort((left, right) => {
+                      const leftRelated = relatedTagOrder.indexOf(left.slug)
+                      const rightRelated = relatedTagOrder.indexOf(right.slug)
+                      if (leftRelated !== -1 || rightRelated !== -1) {
+                        return leftRelated === -1 ? 1 : rightRelated === -1 ? -1 : leftRelated - rightRelated
+                      }
+                      return left.sort_order - right.sort_order
+                    })
+                    .map((tag) => {
+                      const related = relatedTagOrder.includes(tag.slug)
+                      return (
+                        <button
+                          key={tag.id}
+                          type="button"
+                          className={`taste-pill${related ? ' is-related' : ''}`}
+                          aria-pressed="false"
+                          onClick={() => setSelectedTags((current) => [...current, tag.slug])}
+                        >
+                          {tag.name}
+                        </button>
+                      )
+                    })}
+                </div>
+              </section>
+            )}
+
+            <section className="picker-block budget-block">
+              <div className="picker-head">
+                <strong>Ngân sách</strong>
+                <span>Mỗi người</span>
+              </div>
+              <div className="budget-strip" role="group" aria-label="Ngân sách mỗi người">
+                {BUDGET_OPTIONS.map((option) => {
+                  const active = budget === option.value
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`budget-card${active ? ' is-active' : ''}`}
+                      aria-pressed={active}
+                      onClick={() => setBudget(option.value)}
+                    >
+                      <strong>{option.label}</strong>
+                      <span>{option.hint}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+          </div>
+
+          <div className="form-actions">
+            <button
+              className="primary-button submit-button"
+              type="submit"
+              disabled={isLoading || !districtId || !categorySlug}
+            >
+              <span>{isLoading ? 'Đang tìm kiếm địa điểm...' : 'Xem gợi ý'}</span>
+              <span className="button-icon" aria-hidden="true">→</span>
+            </button>
+          </div>
+        </form>
       </section>
-      <footer><strong>Hôm nay ăn gì</strong><span>Ăn ngon, uống vui, chọn nhanh, khỏi nghĩ nhiều.</span></footer>
+
+      {isResultOpen && (
+        <div
+          className={`result-modal${featuredPlace ? ' has-place' : ''}${isLoading ? ' is-loading' : ''}`}
+          style={featuredBackdrop.style}
+          role="presentation"
+        >
+          <button className="result-backdrop" type="button" aria-label="Đóng gợi ý" onClick={closeResultModal} />
+          <div
+            className="result-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={resultTitleId}
+            aria-busy={isLoading}
+          >
+            <div className="result-dialog-top">
+              <p className="result-kicker">Gợi ý cho bạn</p>
+              <button className="result-close" type="button" onClick={closeResultModal} aria-label="Đóng">
+                ×
+              </button>
+            </div>
+
+            {error && <p className="notice">Không thể tải gợi ý: {error}</p>}
+
+            {isLoading && (
+              <div className="result-loading" aria-label="Đang tìm quán">
+                <div className="result-loading-orb" aria-hidden="true" />
+                <strong>Đang tìm kiếm một chỗ hay...</strong>
+                <p>Giữ mood, nới bán kính nếu cần, rồi bung kết quả.</p>
+              </div>
+            )}
+
+            {!isLoading && !error && result && result.places.length === 0 && (
+              <div className="result-empty">
+                <strong>Chưa thấy chỗ khớp</strong>
+                <p>Thử nới bán kính, đổi mood hoặc bỏ bớt sở thích rồi chọn lại.</p>
+                <button className="secondary-button" type="button" onClick={() => void requestRecommendation()}>
+                  Thử lại
+                </button>
+              </div>
+            )}
+
+            {!isLoading && featuredPlace && (
+              <article className="result-card">
+                <div className="result-media">
+                  {featuredPlace.cover_image ? (
+                    <img src={featuredPlace.cover_image} alt="" />
+                  ) : (
+                    <div className="result-fallback" aria-hidden="true">
+                      <span>{featuredBackdrop.accent.emoji}</span>
+                      <strong>{featuredPlace.name.slice(0, 1)}</strong>
+                    </div>
+                  )}
+                  <div className="result-media-badges">
+                    <span>{featuredPlace.category?.name || 'Địa điểm'}</span>
+                    <span>{featuredPlace.district?.name || selectedDistrict?.name || 'Hà Nội'}</span>
+                  </div>
+                </div>
+
+                <div className="result-body">
+                  <h3 id={resultTitleId}>{featuredPlace.name}</h3>
+                  <p className="result-address">{featuredPlace.address}</p>
+
+                  <div className="result-stats">
+                    <span>{featuredPlace.distance_km.toFixed(1)} km</span>
+                    <span>{featuredPlace.price_display}</span>
+                    <span>★ {featuredPlace.rating.toFixed(1)}</span>
+                  </div>
+
+                  {featuredPlace.matched_tags.length > 0 && (
+                    <div className="result-tags">
+                      {featuredPlace.tags
+                        .filter((tag) => featuredPlace.matched_tags.includes(tag.slug))
+                        .map((tag) => (
+                          <span key={tag.slug}>{tag.name}</span>
+                        ))}
+                    </div>
+                  )}
+
+                  {result?.meta.fallback_applied && (
+                    <p className="result-note">
+                      Đã mở rộng phạm vi tới {result.meta.query_radius_km} km để đủ lựa chọn.
+                    </p>
+                  )}
+
+                  <div className="result-actions">
+                    <button
+                      className="primary-button"
+                      type="button"
+                      onClick={() => void requestRecommendation()}
+                      disabled={isLoading}
+                    >
+                      <span>{isLoading ? 'Đang chọn...' : 'Chọn lại'}</span>
+                      <span className="button-icon" aria-hidden="true">↻</span>
+                    </button>
+                    <button className="ghost-button" type="button" onClick={closeResultModal}>
+                      Giữ form này
+                    </button>
+                  </div>
+                </div>
+              </article>
+            )}
+          </div>
+        </div>
+      )}
+
+      <footer className="site-footer">
+        <div>
+          <strong>Hôm nay ăn gì</strong>
+          <p>Ăn ngon, uống vui, chọn nhanh, khỏi nghĩ nhiều.</p>
+        </div>
+        <div className="footer-meta">
+          <span>Hà Nội</span>
+          <a href="/admin">Quản trị</a>
+        </div>
+      </footer>
     </main>
   )
 }

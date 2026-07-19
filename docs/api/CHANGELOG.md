@@ -18,5 +18,6 @@
 - Đây là baseline tài liệu trước khi các endpoint nghiệp vụ được triển khai.
 - Recommendation endpoint baseline đã được nối vào Laravel scaffold và FE demo gửi request theo contract.
 - Recommendation hỗ trợ hard filter theo quận, category, khoảng giá; match tag bằng slug, giới hạn đúng số kết quả và trả fallback metadata thực tế.
+- `/tags?category=` hiện trả về taxonomy tag đã được curate cho category được chọn, không còn phụ thuộc category đó đã có place published.
 
 Mọi thay đổi API client-observable phải được ghi trong file này cùng với thay đổi OpenAPI.

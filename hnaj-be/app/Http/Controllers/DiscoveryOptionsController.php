@@ -75,9 +75,10 @@ final class DiscoveryOptionsController extends Controller
         $selected = $validated['selected'] ?? [];
         $tagQuery = Tag::query()
             ->where('is_active', true)
-            ->when($categorySlug, fn ($query) => $query->whereHas('places', fn ($placeQuery) => $placeQuery
-                ->published()
-                ->whereHas('category', fn ($categoryQuery) => $categoryQuery->where('slug', $categorySlug))));
+            ->when($categorySlug, fn ($query) => $query->whereHas(
+                'categories',
+                fn ($categoryQuery) => $categoryQuery->where('slug', $categorySlug),
+            ));
         $tags = $tagQuery
             ->orderBy('sort_order')
             ->get(['id', 'name', 'slug', 'group_name', 'icon', 'sort_order']);

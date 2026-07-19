@@ -165,7 +165,7 @@ paths:
     get:
       tags: [Discovery Options]
       operationId: listTags
-      summary: List active tags and related suggestions for discovery
+      summary: List active category taxonomy tags and related discovery suggestions
       parameters:
         - in: query
           name: category
@@ -178,7 +178,10 @@ paths:
             items: {type: string, pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'}
       responses:
         '200':
-          description: Ordered tag workspace and up to six related tag slugs.
+          description: >-
+            Ordered active tags. When `category` is provided, tags are limited
+            to that category's curated taxonomy; related tag suggestions remain
+            based on published-place co-occurrence.
           content:
             application/json:
               schema:

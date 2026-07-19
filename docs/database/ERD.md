@@ -8,6 +8,7 @@ erDiagram
     ROLES ||--o{ USER_ROLES : grants
     USERS }o--o{ PLACES : manages
     CATEGORIES ||--o{ PLACES : classifies
+    CATEGORIES }o--o{ TAGS : offers_in_discovery
     ADMINISTRATIVE_AREAS ||--o{ PLACES : district_or_ward
     ADMINISTRATIVE_AREAS ||--o{ ADMINISTRATIVE_AREAS : contains
     PLACES }o--o{ TAGS : classified_by

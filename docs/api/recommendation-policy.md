@@ -12,7 +12,7 @@ Recommendation chỉ xét Place đã `published` và chưa soft-delete. Quận, 
 
 ## Tags và ranking
 
-Tag request luôn dùng slug và được match theo OR. Related tags được xếp theo số lần đồng xuất hiện trên place published cùng category. Toàn bộ tag vẫn được trả về; tag selected và related chỉ được đẩy lên trước.
+Tag request luôn dùng slug và được match theo OR. Khi có category, `/tags` trả taxonomy đã được curate cho category đó từ `category_tag`, nên bộ lọc dùng được ngay cả khi category chưa có place published. Related tags được xếp theo số lần đồng xuất hiện trên place published cùng category. Tag selected và related được đẩy lên trước.
 
 1. mức độ khớp tag;
 2. khoảng cách;
