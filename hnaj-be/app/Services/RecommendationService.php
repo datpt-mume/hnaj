@@ -17,7 +17,7 @@ final class RecommendationService
         $radius = (float) $filters['radius_km'];
         $priceMin = (int) ($filters['price_min'] ?? 0);
         $priceMax = isset($filters['price_max']) ? (int) $filters['price_max'] : null;
-        $tags = $filters['tags'] ?? [];
+        $selectedTags = $filters['tags'] ?? [];
         $limit = (int) ($filters['limit'] ?? 3);
         $candidateRadii = array_values(array_unique([$radius, min(20, $radius * 1.5), min(20, $radius * 2)]));
 
@@ -27,26 +27,35 @@ final class RecommendationService
                 ->published()
                 ->when(isset($filters['district_id']), fn ($query) => $query->where('district_id', $filters['district_id']))
                 ->when(isset($filters['category_slug']), fn ($query) => $query->whereHas('category', fn ($categoryQuery) => $categoryQuery->where('slug', $filters['category_slug'])))
-                ->whereRaw('(price_min + price_max) / 2 >= ?', [$priceMin])
+                ->where(function ($query) use ($priceMin): void {
+                    $query->whereNull('price_min')
+                        ->whereNull('price_max')
+                        ->orWhereRaw('(price_min + price_max) / 2 >= ?', [$priceMin]);
+                })
                 ->whereBetween('latitude', [$latitude - $candidateRadius / 111, $latitude + $candidateRadius / 111])
                 ->whereBetween('longitude', [$longitude - $candidateRadius / 111, $longitude + $candidateRadius / 111]);
 
             if ($priceMax !== null) {
-                $query->whereRaw('(price_min + price_max) / 2 <= ?', [$priceMax]);
+                $query->where(function ($query) use ($priceMax): void {
+                    $query->whereNull('price_min')
+                        ->whereNull('price_max')
+                        ->orWhereRaw('(price_min + price_max) / 2 <= ?', [$priceMax]);
+                });
             }
 
             $places = $query
                 ->get()
-                ->map(function (Place $place) use ($latitude, $longitude, $tags): array {
-                    $distance = $this->distanceKm($latitude, $longitude, $place->latitude, $place->longitude);
-                    $placeTags = $place->tags->map(fn ($tag): array => [
+                ->map(function (Place $place) use ($latitude, $longitude, $selectedTags): array {
+                    $distance = self::distanceKm($latitude, $longitude, $place->latitude, $place->longitude);
+                    $placeTagModels = $place->tags()->get();
+                    $placeTags = $placeTagModels->map(fn ($tag): array => [
                         'name' => $tag->name,
                         'slug' => $tag->slug,
                         'group' => $tag->group_name,
                         'icon' => $tag->icon,
                         'sort_order' => $tag->sort_order,
                     ])->values()->all();
-                    $matchedTags = array_values(array_intersect($tags, $place->tags->pluck('slug')->all()));
+                    $matchedTags = array_values(array_intersect($selectedTags, $placeTagModels->pluck('slug')->all()));
 
                     return [
                         'id' => $place->id,
@@ -99,7 +108,7 @@ final class RecommendationService
         ];
     }
 
-    private function distanceKm(float $lat1, float $lng1, float $lat2, float $lng2): float
+    public static function distanceKm(float $lat1, float $lng1, float $lat2, float $lng2): float
     {
         $earthRadius = 6371;
         $latDelta = deg2rad($lat2 - $lat1);

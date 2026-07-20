@@ -1,7 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap");
 
 :root {
-  color: #14241c;
+  color: #1a211c;
   background: #f4f0e6;
   font-family: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
   font-synthesis: none;
@@ -16,4 +16,4 @@ body { margin: 0; min-width: 320px; background: #f4f0e6; }
 button, input, select, textarea { font: inherit; }
 a { color: inherit; }
 img { display: block; max-width: 100%; }
-::selection { background: rgba(31, 79, 56, 0.18); color: #14241c; }
+::selection { background: rgba(31, 79, 56, 0.16); color: #1a211c; }

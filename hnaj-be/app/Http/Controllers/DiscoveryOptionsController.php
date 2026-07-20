@@ -10,6 +10,7 @@ use App\Models\Place;
 use App\Models\Tag;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 final class DiscoveryOptionsController extends Controller
 {
@@ -66,9 +67,15 @@ final class DiscoveryOptionsController extends Controller
     public function tags(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'category' => ['sometimes', 'string', 'exists:categories,slug'],
+            'category' => [
+                'sometimes', 'string', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+                Rule::exists('categories', 'slug')->where('is_active', true),
+            ],
             'selected' => ['sometimes', 'array', 'max:20'],
-            'selected.*' => ['string', 'exists:tags,slug'],
+            'selected.*' => [
+                'string', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+                Rule::exists('tags', 'slug')->where('is_active', true),
+            ],
         ]);
 
         $categorySlug = $validated['category'] ?? null;
@@ -82,13 +89,6 @@ final class DiscoveryOptionsController extends Controller
         $tags = $tagQuery
             ->orderBy('sort_order')
             ->get(['id', 'name', 'slug', 'group_name', 'icon', 'sort_order']);
-
-        if ($tags->isEmpty() && $categorySlug) {
-            $tags = Tag::query()
-                ->where('is_active', true)
-                ->orderBy('sort_order')
-                ->get(['id', 'name', 'slug', 'group_name', 'icon', 'sort_order']);
-        }
 
         $relatedSlugs = $this->relatedTagSlugs($selected, $categorySlug);
         $data = $tags->map(fn (Tag $tag): array => [

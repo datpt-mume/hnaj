@@ -9,7 +9,7 @@ use SplFileObject;
 final class PlaceCsvParser
 {
     /**
-    * @return array{rows: list<array{row_number: int, data: array<string, mixed>}>, errors: list<array{row: int, errors: list<string>}>}
+     * @return array{rows: list<array{row_number: int, data: array<string, mixed>}>, errors: list<array{row: int, errors: list<string>}>}
      */
     public function parse(string $path): array
     {
@@ -89,6 +89,8 @@ final class PlaceCsvParser
             'price_max' => $this->parsePrice($raw['price_range'] ?? null)[1],
             'opening_hours' => $this->json($raw['open_hours'] ?? null),
             'complete_address' => $this->json($raw['complete_address'] ?? null),
+            'cover_image' => $this->text($raw['thumbnail'] ?? null) ?: null,
+            'gallery' => $this->imageUrls($raw['images'] ?? null),
         ];
         $row['fingerprint'] = hash('sha256', $this->canonical($name).'|'.$this->canonical($address));
 
@@ -121,6 +123,22 @@ final class PlaceCsvParser
         $decoded = json_decode($this->text($value), true);
 
         return is_array($decoded) ? $decoded : null;
+    }
+
+    /** @return list<string>|null */
+    private function imageUrls(mixed $value): ?array
+    {
+        $images = $this->json($value);
+        if ($images === null) {
+            return null;
+        }
+
+        $urls = array_values(array_filter(array_map(
+            fn (mixed $image): ?string => is_array($image) ? ($this->text($image['image'] ?? null) ?: null) : null,
+            $images,
+        )));
+
+        return $urls === [] ? null : $urls;
     }
 
     private function canonical(string $value): string

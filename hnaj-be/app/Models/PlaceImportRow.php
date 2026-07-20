@@ -15,6 +15,7 @@ final class PlaceImportRow extends Model
     protected $fillable = [
         'batch_id', 'row_number', 'external_id', 'fingerprint', 'status',
         'normalized_data', 'classification', 'errors',
+        'processed_at', 'attempts',
     ];
 
     protected function casts(): array
@@ -24,6 +25,8 @@ final class PlaceImportRow extends Model
             'classification' => 'array',
             'errors' => 'array',
             'row_number' => 'integer',
+            'processed_at' => 'datetime',
+            'attempts' => 'integer',
         ];
     }
 

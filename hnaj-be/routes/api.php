@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\CsrfCookieController;
 use App\Http\Controllers\DiscoveryOptionsController;
 use App\Http\Controllers\RecommendationController;
+use App\Http\Controllers\PlaceController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
@@ -22,11 +23,15 @@ Route::prefix('v1')->group(function (): void {
     Route::get('/categories', [DiscoveryOptionsController::class, 'categories']);
     Route::get('/districts', [DiscoveryOptionsController::class, 'districts']);
     Route::get('/tags', [DiscoveryOptionsController::class, 'tags']);
-    Route::post('/recommendations', RecommendationController::class);
+    Route::get('/recommendations', RecommendationController::class);
+    Route::get('/places/{slug}', [PlaceController::class, 'show']);
 
     Route::middleware(['web', 'auth:sanctum', 'role:admin,editor'])->prefix('admin/imports/places')->group(function (): void {
         Route::post('/preview', [AdminPlaceImportController::class, 'preview']);
+        Route::get('/', [AdminPlaceImportController::class, 'index']);
         Route::post('/{batch}/confirm', [AdminPlaceImportController::class, 'confirm']);
+        Route::post('/{batch}/pause', [AdminPlaceImportController::class, 'pause']);
+        Route::post('/{batch}/resume', [AdminPlaceImportController::class, 'resume']);
         Route::get('/{batch}', [AdminPlaceImportController::class, 'show']);
     });
 });

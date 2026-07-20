@@ -1,108 +1,8 @@
-import { useEffect, useId, useState } from 'react'
+import { useCallback, useEffect, useId, useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
 import './App.css'
-
-type RecommendationRequest = {
-  location: { lat: number; lng: number }
-  district_id: string
-  radius_km: number
-  category_slug: string
-  price_min: number
-  price_max: number | null
-  tags?: string[]
-  limit?: 1 | 3
-}
-
-type Place = {
-  id: string
-  name: string
-  slug: string
-  distance_km: number
-  price_display: string
-  address: string
-  rating: number
-  matched_tags: string[]
-  cover_image: string | null
-  category: { name: string; slug: string } | null
-  district: { name: string } | null
-  tags: Tag[]
-}
-
-type RecommendationData = {
-  places: Place[]
-  meta: { message_key: string; fallback_applied: boolean; query_radius_km: number }
-}
-
-type Category = { id: string; name: string; slug: string; sort_order: number }
-type District = { id: string; name: string; slug: string; center: { lat: number; lng: number } | null }
-type Tag = { id: string; name: string; slug: string; group: string; icon: string | null; sort_order: number; is_related?: boolean }
-
-type AuthUser = { id: string; name: string; email: string; roles: string[] }
-type ImportRow = { row_number: number; external_id: string | null; status: string; normalized_data: Record<string, unknown>; errors: string[] }
-type ImportBatch = { id: string; filename: string; status: string; total_rows: number; valid_rows: number; duplicate_rows: number; invalid_rows: number; error_message?: string | null; rows: ImportRow[] }
-
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/(?:api)?\/?$/, '')
-
-async function recommend(request: RecommendationRequest): Promise<RecommendationData> {
-  const response = await fetch(`${API_BASE}/api/v1/recommendations`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify(request),
-  })
-  const payload = await response.json()
-  if (!response.ok || !payload.success) {
-    throw new Error(payload.error?.message_key || 'recommendation.request_failed')
-  }
-  return payload.data
-}
-
-async function publicRequest<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE}/api/v1${path}`, { headers: { Accept: 'application/json' } })
-  const payload = await response.json()
-  if (!response.ok || !payload.success) throw new Error(payload.error?.message_key || 'discovery.request_failed')
-  return payload.data
-}
-
-async function authRequest(path: string, options: RequestInit = {}) {
-  const xsrf = decodeURIComponent(document.cookie.split('; ').find((cookie) => cookie.startsWith('XSRF-TOKEN='))?.split('=')[1] || '')
-  const isMultipart = options.body instanceof FormData
-  const headers = new Headers(options.headers)
-  headers.set('Accept', 'application/json')
-  if (!isMultipart) headers.set('Content-Type', 'application/json')
-  if (xsrf) headers.set('X-XSRF-TOKEN', xsrf)
-  const response = await fetch(`${API_BASE}/api/v1${path}`, {
-    ...options,
-    credentials: 'include',
-    headers,
-  })
-  if (!response.ok) {
-    const payload = await response.json().catch(() => null)
-    throw new Error(payload?.message || payload?.errors?.email?.[0] || 'auth.request_failed')
-  }
-  return response.status === 204 ? null : response.json()
-}
-
-async function uploadImport(file: File): Promise<ImportBatch> {
-  await authRequest('/auth/csrf-cookie', { method: 'GET' })
-  const form = new FormData()
-  form.append('file', file)
-  const payload = await authRequest('/admin/imports/places/preview', { method: 'POST', body: form })
-  return payload.data
-}
-
-async function updateImport(batchId: string, confirm = false): Promise<ImportBatch> {
-  const payload = await authRequest(`/admin/imports/places/${batchId}${confirm ? '/confirm' : ''}`, { method: confirm ? 'POST' : 'GET' })
-  return payload.data
-}
-
-async function getCurrentUser(): Promise<AuthUser | null> {
-  try {
-    const payload = await authRequest('/auth/me')
-    return payload.data
-  } catch {
-    return null
-  }
-}
+import { authRequest, getCurrentUser, listImports, publicRequest, recommend, transitionImport, updateImport, uploadImport } from './api'
+import type { AuthUser, Category, District, ImportBatchDetail, ImportHistory, Place, RecommendationData, Tag, UserLocation } from './types'
 
 const HERO_OPTIONS = [
   {
@@ -135,28 +35,28 @@ const HERO_OPTIONS = [
 const HERO_ROTATE_MS = 4200
 
 const CATEGORY_ACCENTS: Record<string, { hue: string; soft: string; deep: string; emoji: string }> = {
-  'an-uong': { hue: '#e4572e', soft: '#ffe3d6', deep: '#9c2f12', emoji: '🍜' },
-  'cafe-do-uong': { hue: '#c47b2b', soft: '#f8e6c8', deep: '#7a4a16', emoji: '☕' },
-  'bar-nightlife': { hue: '#7b3fe4', soft: '#ebe0ff', deep: '#4a1f99', emoji: '🍸' },
-  'ngoai-troi': { hue: '#1f8a5b', soft: '#d8f3e5', deep: '#0f4f34', emoji: '🌿' },
-  'gaming-giai-tri': { hue: '#2f6fed', soft: '#dce8ff', deep: '#1a3f99', emoji: '🎮' },
-  'van-hoa-nghe-thuat': { hue: '#d63d7a', soft: '#ffd9e8', deep: '#8a1848', emoji: '🎭' },
-  'suc-khoe-thu-gian': { hue: '#0f9d8a', soft: '#d4f5ef', deep: '#0a5c51', emoji: '🧘' },
-  'mua-sam': { hue: '#e09f1f', soft: '#fff0c8', deep: '#8a5d0a', emoji: '🛍️' },
+  'an-uong': { hue: '#c45c2a', soft: '#f6e7dc', deep: '#7a3514', emoji: '🍜' },
+  'cafe-do-uong': { hue: '#a56a2d', soft: '#f3e8d8', deep: '#6b4216', emoji: '☕' },
+  'bar-nightlife': { hue: '#5b4d6a', soft: '#ebe7ef', deep: '#342a40', emoji: '🍸' },
+  'ngoai-troi': { hue: '#2f6b4f', soft: '#e2efe8', deep: '#1a4030', emoji: '🌿' },
+  'gaming-giai-tri': { hue: '#3f5f7a', soft: '#e4ebf1', deep: '#243848', emoji: '🎮' },
+  'van-hoa-nghe-thuat': { hue: '#8a4d5c', soft: '#f1e4e8', deep: '#532832', emoji: '🎭' },
+  'suc-khoe-thu-gian': { hue: '#3d6b63', soft: '#e3efed', deep: '#24423d', emoji: '🧘' },
+  'mua-sam': { hue: '#9a6b2f', soft: '#f2e9da', deep: '#5f4118', emoji: '🛍️' },
 }
 
 const BUDGET_OPTIONS = [
-  { value: 'under-100', label: 'Dưới 100k', hint: 'Nhẹ ví' },
-  { value: '100-300', label: '100–300k', hint: 'Vừa túi' },
-  { value: '300-500', label: '300–500k', hint: 'Thoải mái' },
-  { value: 'over-500', label: 'Trên 500k', hint: 'Chơi lớn' },
+  { value: 'under-100', label: 'Dưới 100k' },
+  { value: '100-300', label: '100–300k' },
+  { value: '300-500', label: '300–500k' },
+  { value: 'over-500', label: 'Trên 500k' },
 ] as const
 
 const RADIUS_OPTIONS = [1, 3, 5, 10, 20] as const
 
 function categoryAccent(slug?: string | null) {
-  if (!slug) return { hue: '#e4572e', soft: '#ffe3d6', deep: '#9c2f12', emoji: '✨' }
-  return CATEGORY_ACCENTS[slug] ?? { hue: '#e4572e', soft: '#ffe3d6', deep: '#9c2f12', emoji: '✨' }
+  if (!slug) return { hue: '#2f6b4f', soft: '#e2efe8', deep: '#1a4030', emoji: '•' }
+  return CATEGORY_ACCENTS[slug] ?? { hue: '#2f6b4f', soft: '#e2efe8', deep: '#1a4030', emoji: '•' }
 }
 
 function placeBackdrop(place: Place): { accent: ReturnType<typeof categoryAccent>; style: CSSProperties } {
@@ -183,7 +83,7 @@ function App() {
   const [districtId, setDistrictId] = useState('')
   const [categorySlug, setCategorySlug] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [gpsLocation, setGpsLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [gpsLocation, setGpsLocation] = useState<UserLocation | null>(null)
   const [locationStatus, setLocationStatus] = useState('Đang dùng tâm quận')
   const [optionsError, setOptionsError] = useState<string | null>(null)
   const [result, setResult] = useState<RecommendationData | null>(null)
@@ -192,8 +92,14 @@ function App() {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loginError, setLoginError] = useState<string | null>(null)
   const [isLoggingIn, setIsLoggingIn] = useState(false)
+  const [isAuthOpen, setIsAuthOpen] = useState(false)
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
+  const [isAccountOpen, setIsAccountOpen] = useState(false)
   const [importFile, setImportFile] = useState<File | null>(null)
-  const [importBatch, setImportBatch] = useState<ImportBatch | null>(null)
+  const [importBatch, setImportBatch] = useState<ImportBatchDetail | null>(null)
+  const [importHistory, setImportHistory] = useState<ImportHistory | null>(null)
+  const [importHistoryLoading, setImportHistoryLoading] = useState(false)
+  const [importHistoryError, setImportHistoryError] = useState<string | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
   const [isImporting, setIsImporting] = useState(false)
   const [heroOptionIndex, setHeroOptionIndex] = useState(0)
@@ -223,9 +129,26 @@ function App() {
         } satisfies CSSProperties,
       }
 
+  const refreshImportHistory = useCallback(async (page = 1) => {
+    setImportHistoryLoading(true)
+    setImportHistoryError(null)
+    try { setImportHistory(await listImports(page)) } catch (requestError) { setImportHistoryError(requestError instanceof Error ? requestError.message : 'import.history_failed') } finally { setImportHistoryLoading(false) }
+  }, [])
+
   useEffect(() => {
-    if (isAdminPage) void getCurrentUser().then(setUser)
-  }, [isAdminPage])
+    void getCurrentUser().then((currentUser) => {
+      setUser(currentUser)
+      if (isAdminPage && currentUser?.roles.some((role) => role === 'admin' || role === 'editor')) void refreshImportHistory()
+    })
+  }, [isAdminPage, refreshImportHistory])
+
+  useEffect(() => {
+    if (!isAdminPage || !importBatch || !['queued', 'processing', 'pause_requested'].includes(importBatch.status)) return
+    const timer = window.setInterval(() => {
+      void updateImport(importBatch.id).then((batch) => { setImportBatch(batch); if (!['queued', 'processing', 'pause_requested'].includes(batch.status)) void refreshImportHistory() }).catch(() => setImportError('import.status_failed'))
+    }, 2500)
+    return () => window.clearInterval(timer)
+  }, [isAdminPage, importBatch, refreshImportHistory])
 
   useEffect(() => {
     if (isAdminPage) return
@@ -282,7 +205,11 @@ function App() {
     }
     setLocationStatus('Đang xác định vị trí...')
     navigator.geolocation.getCurrentPosition(
-      ({ coords }) => { setGpsLocation({ lat: coords.latitude, lng: coords.longitude }); setLocationStatus('Đang tính từ vị trí hiện tại') },
+      ({ coords }) => {
+        setGpsLocation({ lat: coords.latitude, lng: coords.longitude })
+        setDistrictId('')
+        setLocationStatus('Đang tính từ vị trí hiện tại')
+      },
       () => { setGpsLocation(null); setLocationStatus('Không có quyền GPS, đang dùng tâm quận') },
       { enableHighAccuracy: true, timeout: 8000 },
     )
@@ -297,8 +224,34 @@ function App() {
       await authRequest('/auth/csrf-cookie', { method: 'GET' })
       const payload = await authRequest('/auth/login', { method: 'POST', body: JSON.stringify({ email: form.get('email'), password: form.get('password') }) })
       setUser(payload.data)
+      setIsAuthOpen(false)
     } catch (requestError) {
       setLoginError(requestError instanceof Error ? requestError.message : 'auth.login_failed')
+    } finally {
+      setIsLoggingIn(false)
+    }
+  }
+
+  async function handleRegister(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setIsLoggingIn(true)
+    setLoginError(null)
+    const form = new FormData(event.currentTarget)
+    try {
+      await authRequest('/auth/csrf-cookie', { method: 'GET' })
+      const payload = await authRequest('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: form.get('name'),
+          email: form.get('email'),
+          password: form.get('password'),
+          password_confirmation: form.get('password_confirmation'),
+        }),
+      })
+      setUser(payload.data)
+      setIsAuthOpen(false)
+    } catch (requestError) {
+      setLoginError(requestError instanceof Error ? requestError.message : 'auth.register_failed')
     } finally {
       setIsLoggingIn(false)
     }
@@ -314,7 +267,7 @@ function App() {
     if (!importFile) return
     setIsImporting(true)
     setImportError(null)
-    try { setImportBatch(await uploadImport(importFile)) } catch (requestError) { setImportError(requestError instanceof Error ? requestError.message : 'import.preview_failed') } finally { setIsImporting(false) }
+    try { const batch = await uploadImport(importFile); setImportBatch(batch); await refreshImportHistory() } catch (requestError) { setImportError(requestError instanceof Error ? requestError.message : 'import.preview_failed') } finally { setIsImporting(false) }
   }
 
   async function handleImportConfirm() {
@@ -322,19 +275,29 @@ function App() {
     setIsImporting(true)
     setImportError(null)
     try {
-      const batch = await updateImport(importBatch.id, true)
-      setImportBatch(batch)
-      if (batch.status === 'classifying') {
-        const refreshed = await updateImport(batch.id)
-        setImportBatch(refreshed)
-      }
+      setImportBatch(await updateImport(importBatch.id, true))
+      await refreshImportHistory()
     } catch (requestError) { setImportError(requestError instanceof Error ? requestError.message : 'import.confirm_failed') } finally { setIsImporting(false) }
+  }
+
+  async function handleImportTransition(action: 'pause' | 'resume') {
+    if (!importBatch) return
+    setIsImporting(true)
+    setImportError(null)
+    try {
+      setImportBatch(await transitionImport(importBatch.id, action))
+      await refreshImportHistory()
+    } catch (requestError) {
+      setImportError(requestError instanceof Error ? requestError.message : `import.${action}_failed`)
+    } finally {
+      setIsImporting(false)
+    }
   }
 
   async function requestRecommendation() {
     const district = districts.find((item) => item.id === districtId)
     const location = gpsLocation || district?.center
-    if (!district || !location || !categorySlug) {
+    if (!location || !categorySlug || (!gpsLocation && !district)) {
       setError('Chọn khu vực và một kiểu đi chơi để tiếp tục.')
       setIsResultOpen(true)
       return
@@ -348,7 +311,7 @@ function App() {
     try {
       setResult(await recommend({
         location,
-        district_id: districtId,
+        district_id: gpsLocation ? '' : districtId,
         radius_km: radius,
         category_slug: categorySlug,
         price_min: priceMin,
@@ -461,9 +424,11 @@ function App() {
                   <div className="import-stats">
                     <span>{importBatch.total_rows} dòng</span>
                     <span>{importBatch.valid_rows} hợp lệ</span>
-                    <span>{importBatch.duplicate_rows} trùng</span>
+                    <span>{importBatch.duplicate_rows} bỏ qua</span>
                     <span>{importBatch.invalid_rows} lỗi</span>
                   </div>
+                  <progress className="import-progress-bar" max="100" value={importBatch.progress_percent}>{importBatch.progress_percent}%</progress>
+                  <p className="import-progress" role="status">{importBatch.progress_percent}% · {importBatch.processed_rows}/{importBatch.total_rows} dòng đã xử lý · {importBatch.failed_rows} lỗi</p>
                   <button
                     className="primary-button"
                     type="button"
@@ -472,8 +437,57 @@ function App() {
                   >
                     <span>{isImporting ? 'Đang xử lý...' : 'Nhập dữ liệu'}</span>
                   </button>
+                  {['queued', 'processing', 'pause_requested'].includes(importBatch.status) && (
+                    <button className="secondary-button" type="button" onClick={() => void handleImportTransition('pause')} disabled={isImporting || importBatch.status === 'pause_requested'}>
+                      {importBatch.status === 'pause_requested' ? 'Đang tạm dừng...' : 'Tạm dừng'}
+                    </button>
+                  )}
+                  {importBatch.status === 'paused' && (
+                    <button className="secondary-button" type="button" onClick={() => void handleImportTransition('resume')} disabled={isImporting}>Tiếp tục</button>
+                  )}
+                  {importBatch.status === 'completed_with_errors' && <p className="notice">Đã hoàn tất nhưng có dòng lỗi cần kiểm tra.</p>}
                 </div>
               )}
+              <section className="import-history" aria-labelledby="import-history-title">
+                <div className="import-history-head">
+                  <div>
+                    <p className="admin-eyebrow">Theo dõi</p>
+                    <h3 id="import-history-title">Lịch sử nhập dữ liệu</h3>
+                  </div>
+                  <button className="secondary-button" type="button" onClick={() => void refreshImportHistory()} disabled={importHistoryLoading}>
+                    {importHistoryLoading ? 'Đang tải...' : 'Làm mới'}
+                  </button>
+                </div>
+                {importHistoryError && <p className="notice">{importHistoryError}</p>}
+                {!importHistoryLoading && importHistory && importHistory.data.length === 0 && <p className="import-history-empty">Chưa có lần nhập dữ liệu nào.</p>}
+                {importHistory && importHistory.data.length > 0 && (
+                  <div className="import-history-list">
+                    {importHistory.data.map((batch) => (
+                      <button
+                        className={`import-history-item${importBatch?.id === batch.id ? ' is-active' : ''}`}
+                        type="button"
+                        key={batch.id}
+                        onClick={() => void updateImport(batch.id).then(setImportBatch).catch(() => setImportError('import.status_failed'))}
+                      >
+                        <span className="import-history-main">
+                          <strong>{batch.filename}</strong>
+                          <small>{batch.created_at ? new Date(batch.created_at).toLocaleString('vi-VN') : batch.status}</small>
+                        </span>
+                        <span className={`import-status import-status-${batch.status}`}>{batch.status}</span>
+                        <span className="import-history-counts">{batch.imported_rows}/{batch.total_rows} nhập · {batch.failed_rows} lỗi</span>
+                        <span className="import-history-progress"><i style={{ width: `${batch.progress_percent}%` }} /></span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {importHistory && importHistory.last_page > 1 && (
+                  <div className="import-history-pagination">
+                    <button className="secondary-button" type="button" onClick={() => void refreshImportHistory(importHistory.current_page - 1)} disabled={importHistory.current_page <= 1 || importHistoryLoading}>Trước</button>
+                    <span>Trang {importHistory.current_page}/{importHistory.last_page}</span>
+                    <button className="secondary-button" type="button" onClick={() => void refreshImportHistory(importHistory.current_page + 1)} disabled={importHistory.current_page >= importHistory.last_page || importHistoryLoading}>Sau</button>
+                  </div>
+                )}
+              </section>
             </section>
           )}
         </section>
@@ -493,9 +507,100 @@ function App() {
         </a>
         <div className="nav-actions">
           <span className="nav-note">Ăn uống · Cà phê · Vui chơi</span>
+          {user ? (
+            <button className="nav-account" type="button" onClick={() => setIsAccountOpen(true)}>
+              {user.name}
+            </button>
+          ) : (
+            <button
+              className="nav-account"
+              type="button"
+              onClick={() => {
+                setAuthMode('login')
+                setLoginError(null)
+                setIsAuthOpen(true)
+              }}
+            >
+              Đăng nhập
+            </button>
+          )}
           <a className="nav-cta" href="#recommendation-form">Chọn ngay</a>
         </div>
       </nav>
+
+      {isAuthOpen && (
+        <div className="auth-modal" role="presentation">
+          <button className="auth-backdrop" type="button" aria-label="Đóng đăng nhập" onClick={() => setIsAuthOpen(false)} />
+          <section className="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+            <div className="auth-dialog-head">
+              <div>
+                <p className="form-kicker">Tài khoản</p>
+                <h2 id="auth-title">{authMode === 'login' ? 'Chào mừng bạn quay lại' : 'Tạo tài khoản'}</h2>
+              </div>
+              <button className="result-close" type="button" onClick={() => setIsAuthOpen(false)} aria-label="Đóng">×</button>
+            </div>
+            <form className="auth-form" onSubmit={authMode === 'login' ? handleLogin : handleRegister}>
+              {authMode === 'register' && (
+                <label>
+                  Tên hiển thị
+                  <input name="name" autoComplete="name" required />
+                </label>
+              )}
+              <label>
+                Email
+                <input name="email" type="email" autoComplete="email" required />
+              </label>
+              <label>
+                Mật khẩu
+                <input name="password" type="password" autoComplete={authMode === 'login' ? 'current-password' : 'new-password'} minLength={8} required />
+              </label>
+              {authMode === 'register' && (
+                <label>
+                  Xác nhận mật khẩu
+                  <input name="password_confirmation" type="password" autoComplete="new-password" minLength={8} required />
+                </label>
+              )}
+              {loginError && <p className="notice">{loginError}</p>}
+              <button className="primary-button" type="submit" disabled={isLoggingIn}>
+                <span>{isLoggingIn ? 'Đang xử lý...' : authMode === 'login' ? 'Đăng nhập' : 'Đăng ký'}</span>
+              </button>
+            </form>
+            <button
+              className="auth-switch"
+              type="button"
+              onClick={() => {
+                setAuthMode((mode) => mode === 'login' ? 'register' : 'login')
+                setLoginError(null)
+              }}
+            >
+              {authMode === 'login' ? 'Chưa có tài khoản? Đăng ký' : 'Đã có tài khoản? Đăng nhập'}
+            </button>
+          </section>
+        </div>
+      )}
+
+      {isAccountOpen && user && (
+        <div className="auth-modal" role="presentation">
+          <button className="auth-backdrop" type="button" aria-label="Đóng tài khoản" onClick={() => setIsAccountOpen(false)} />
+          <section className="auth-dialog account-dialog" role="dialog" aria-modal="true" aria-labelledby="account-title">
+            <div className="auth-dialog-head">
+              <div>
+                <p className="form-kicker">Tài khoản của bạn</p>
+                <h2 id="account-title">{user.name}</h2>
+              </div>
+              <button className="result-close" type="button" onClick={() => setIsAccountOpen(false)} aria-label="Đóng">×</button>
+            </div>
+            <dl className="account-summary">
+              <div><dt>Email</dt><dd>{user.email}</dd></div>
+              <div><dt>Vai trò</dt><dd>{user.roles.length > 0 ? user.roles.join(', ') : 'Người dùng'}</dd></div>
+            </dl>
+            <div className="account-actions">
+              {user.roles.some((role) => role === 'admin' || role === 'editor') && <a className="secondary-button" href="/admin">Mở quản trị</a>}
+              <button className="primary-button" type="button" onClick={() => { setIsAccountOpen(false); void handleLogout() }}>Đăng xuất</button>
+            </div>
+          </section>
+        </div>
+      )}
 
       <header className="hero">
         <div className="hero-copy">
@@ -560,13 +665,13 @@ function App() {
         <form className="controls panel discovery-form" onSubmit={handleSubmit}>
           <div className="form-heading">
             <div className="form-heading-copy">
-              <p className="form-kicker">Bộ lọc đi chơi</p>
+              <p className="form-kicker">Bộ lọc</p>
               <h2>Bạn muốn đi đâu?</h2>
-              <p>Chọn khu vực, mood, sở thích và ngân sách — một gợi ý sẽ bật lên ngay.</p>
+              <p>Chọn khu vực, loại hình, sở thích và ngân sách để nhận một gợi ý phù hợp.</p>
             </div>
             <div className="form-summary" aria-live="polite">
               <span>{selectedDistrict?.name || 'Chưa chọn quận'}</span>
-              <span>{selectedCategory?.name || 'Chưa chọn mood'}</span>
+              <span>{selectedCategory?.name || 'Chưa chọn loại'}</span>
               <span>{selectedBudget.label}</span>
               <span>≤ {radius} km</span>
             </div>
@@ -590,6 +695,7 @@ function App() {
                       type="button"
                       role="option"
                       aria-selected={active}
+                      aria-label={district.center ? district.name : `${district.name}, chưa có tâm quận`}
                       className={`district-tile${active ? ' is-active' : ''}${district.center ? '' : ' is-disabled'}`}
                       disabled={!district.center}
                       onClick={() => {
@@ -599,7 +705,6 @@ function App() {
                       }}
                     >
                       <span className="district-tile-name">{district.name}</span>
-                      <span className="district-tile-meta">{district.center ? 'Sẵn sàng' : 'Chưa có tâm'}</span>
                     </button>
                   )
                 })}
@@ -610,7 +715,7 @@ function App() {
                   className="ghost-button gps-button"
                   type="button"
                   onClick={requestCurrentLocation}
-                  disabled={!districtId}
+                  disabled={false}
                 >
                   {gpsLocation ? 'Đang dùng GPS' : 'Dùng GPS hiện tại'}
                 </button>
@@ -634,10 +739,10 @@ function App() {
 
             <section className="picker-block mood-block">
               <div className="picker-head">
-                <strong>Hôm nay muốn gì</strong>
-                <span>Chạm một mood</span>
+                <strong>Loại hình</strong>
+                <span>Chọn một mục</span>
               </div>
-              <div className="mood-grid" role="group" aria-label="Hôm nay bạn muốn">
+              <div className="mood-grid" role="group" aria-label="Loại hình">
                 {categories.map((category) => {
                   const accent = categoryAccent(category.slug)
                   const active = categorySlug === category.slug
@@ -659,7 +764,6 @@ function App() {
                     >
                       <span className="mood-emoji" aria-hidden="true">{accent.emoji}</span>
                       <span className="mood-name">{category.name}</span>
-                      <span className="mood-check" aria-hidden="true">{active ? '✓' : ''}</span>
                     </button>
                   )
                 })}
@@ -737,7 +841,6 @@ function App() {
                       onClick={() => setBudget(option.value)}
                     >
                       <strong>{option.label}</strong>
-                      <span>{option.hint}</span>
                     </button>
                   )
                 })}
@@ -749,7 +852,7 @@ function App() {
             <button
               className="primary-button submit-button"
               type="submit"
-              disabled={isLoading || !districtId || !categorySlug}
+              disabled={isLoading || (!districtId && !gpsLocation) || !categorySlug}
             >
               <span>{isLoading ? 'Đang tìm kiếm địa điểm...' : 'Xem gợi ý'}</span>
               <span className="button-icon" aria-hidden="true">→</span>
@@ -784,16 +887,16 @@ function App() {
             {isLoading && (
               <div className="result-loading" aria-label="Đang tìm quán">
                 <div className="result-loading-orb" aria-hidden="true" />
-                <strong>Đang tìm kiếm một chỗ hay...</strong>
-                <p>Giữ mood, nới bán kính nếu cần, rồi bung kết quả.</p>
+                <strong>Đang tìm địa điểm phù hợp…</strong>
+                <p>Giữ lựa chọn hiện tại hoặc nới bán kính nếu cần.</p>
               </div>
             )}
 
             {!isLoading && !error && result && result.places.length === 0 && (
               <div className="result-empty">
                 <strong>Chưa thấy chỗ khớp</strong>
-                <p>Thử nới bán kính, đổi mood hoặc bỏ bớt sở thích rồi chọn lại.</p>
-                <button className="secondary-button" type="button" onClick={() => void requestRecommendation()}>
+                <p>Thử nới bán kính, đổi loại hình hoặc bớt tag.</p>
+                <button className="ghost-button" type="button" onClick={() => void requestRecommendation()}>
                   Thử lại
                 </button>
               </div>
@@ -821,15 +924,15 @@ function App() {
                   <p className="result-address">{featuredPlace.address}</p>
 
                   <div className="result-stats">
-                    <span>{featuredPlace.distance_km.toFixed(1)} km</span>
+                    {featuredPlace.distance_km !== undefined && <span>{featuredPlace.distance_km.toFixed(1)} km</span>}
                     <span>{featuredPlace.price_display}</span>
                     <span>★ {featuredPlace.rating.toFixed(1)}</span>
                   </div>
 
-                  {featuredPlace.matched_tags.length > 0 && (
+                  {featuredPlace.matched_tags && featuredPlace.matched_tags.length > 0 && (
                     <div className="result-tags">
                       {featuredPlace.tags
-                        .filter((tag) => featuredPlace.matched_tags.includes(tag.slug))
+                        .filter((tag) => featuredPlace.matched_tags?.includes(tag.slug))
                         .map((tag) => (
                           <span key={tag.slug}>{tag.name}</span>
                         ))}
@@ -842,6 +945,8 @@ function App() {
                     </p>
                   )}
 
+                  {featuredPlace.description && <p className="result-description">{featuredPlace.description}</p>}
+
                   <div className="result-actions">
                     <button
                       className="primary-button"
@@ -852,6 +957,9 @@ function App() {
                       <span>{isLoading ? 'Đang chọn...' : 'Chọn lại'}</span>
                       <span className="button-icon" aria-hidden="true">↻</span>
                     </button>
+                    <a className="ghost-button result-detail-link" href={`/places/${encodeURIComponent(featuredPlace.slug)}`}>
+                      Xem chi tiết
+                    </a>
                     <button className="ghost-button" type="button" onClick={closeResultModal}>
                       Giữ form này
                     </button>

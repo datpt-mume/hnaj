@@ -1,0 +1,417 @@
+{
+  ".agents/skills/vercel-react-best-practices/metadata.json": {
+    "mtime": 1784277994.398486,
+    "ast_hash": "5cd9ae4fc688353236c3b92e8f06dfcc",
+    "semantic_hash": "5cd9ae4fc688353236c3b92e8f06dfcc"
+  },
+  "hnaj-be/app/Http/Controllers/AdminPlaceImportController.php": {
+    "mtime": 1784528858.3644075,
+    "ast_hash": "f406d6fa7dfebf84399d4842568fb124",
+    "semantic_hash": "f406d6fa7dfebf84399d4842568fb124"
+  },
+  "hnaj-be/app/Http/Controllers/Auth/AuthController.php": {
+    "mtime": 1784446511.0371666,
+    "ast_hash": "d11e904a8149ad779ab373f3e1fe298d",
+    "semantic_hash": "d11e904a8149ad779ab373f3e1fe298d"
+  },
+  "hnaj-be/app/Http/Controllers/Auth/CsrfCookieController.php": {
+    "mtime": 1784446016.2578719,
+    "ast_hash": "f21fd12f5a3b1f9aaf4f33a800bcfa1b",
+    "semantic_hash": "f21fd12f5a3b1f9aaf4f33a800bcfa1b"
+  },
+  "hnaj-be/app/Http/Controllers/Controller.php": {
+    "mtime": 1779750712.0,
+    "ast_hash": "25a307335c0719bc9a91b3f7babd186d",
+    "semantic_hash": "25a307335c0719bc9a91b3f7babd186d"
+  },
+  "hnaj-be/app/Http/Controllers/DiscoveryOptionsController.php": {
+    "mtime": 1784530855.482871,
+    "ast_hash": "c6c582d63ba2e0a170c96d0cb38a0e2d",
+    "semantic_hash": "c6c582d63ba2e0a170c96d0cb38a0e2d"
+  },
+  "hnaj-be/app/Http/Controllers/PlaceController.php": {
+    "mtime": 1784538953.0251393,
+    "ast_hash": "cb99e9845ed429f716009cde9a7b780a",
+    "semantic_hash": "cb99e9845ed429f716009cde9a7b780a"
+  },
+  "hnaj-be/app/Http/Controllers/RecommendationController.php": {
+    "mtime": 1784451356.5041053,
+    "ast_hash": "c5d32da37f7d9cfaa53dd6a7c9b84edb",
+    "semantic_hash": "c5d32da37f7d9cfaa53dd6a7c9b84edb"
+  },
+  "hnaj-be/app/Http/Middleware/RequireRole.php": {
+    "mtime": 1784445649.3958275,
+    "ast_hash": "7f6ccd50ebaa6a3e4842e46f91d3cf92",
+    "semantic_hash": "7f6ccd50ebaa6a3e4842e46f91d3cf92"
+  },
+  "hnaj-be/app/Jobs/ProcessPlaceImportBatch.php": {
+    "mtime": 1784530397.8401134,
+    "ast_hash": "519d24f1859922588acc18e965926ead",
+    "semantic_hash": "519d24f1859922588acc18e965926ead"
+  },
+  "hnaj-be/app/Models/AdministrativeArea.php": {
+    "mtime": 1784450958.3923368,
+    "ast_hash": "d7bc6c27e9813e0362bd469ee261057b",
+    "semantic_hash": "d7bc6c27e9813e0362bd469ee261057b"
+  },
+  "hnaj-be/app/Models/Category.php": {
+    "mtime": 1784461550.4529488,
+    "ast_hash": "ae9665071421ee482c11b25346f1827f",
+    "semantic_hash": "ae9665071421ee482c11b25346f1827f"
+  },
+  "hnaj-be/app/Models/Place.php": {
+    "mtime": 1784521948.3736417,
+    "ast_hash": "400c87155f937f1100b5ae3b6ee2dc89",
+    "semantic_hash": "400c87155f937f1100b5ae3b6ee2dc89"
+  },
+  "hnaj-be/app/Models/PlaceExternalId.php": {
+    "mtime": 1784444620.561252,
+    "ast_hash": "46722702a2f4bd0ec8e2275814e4a773",
+    "semantic_hash": "46722702a2f4bd0ec8e2275814e4a773"
+  },
+  "hnaj-be/app/Models/PlaceImportBatch.php": {
+    "mtime": 1784511441.7399404,
+    "ast_hash": "f7260eda8bb702f5fe7654355ae5fa12",
+    "semantic_hash": "f7260eda8bb702f5fe7654355ae5fa12"
+  },
+  "hnaj-be/app/Models/PlaceImportRow.php": {
+    "mtime": 1784511441.7399404,
+    "ast_hash": "8bfcd692e8bb291405e57fc0841fb0b2",
+    "semantic_hash": "8bfcd692e8bb291405e57fc0841fb0b2"
+  },
+  "hnaj-be/app/Models/Role.php": {
+    "mtime": 1784445649.394247,
+    "ast_hash": "2457d2e1b1751ecc72e00c159458180a",
+    "semantic_hash": "2457d2e1b1751ecc72e00c159458180a"
+  },
+  "hnaj-be/app/Models/Tag.php": {
+    "mtime": 1784461550.4891787,
+    "ast_hash": "40f8acc93ad8a7e93fc5c9ec7e3ee258",
+    "semantic_hash": "40f8acc93ad8a7e93fc5c9ec7e3ee258"
+  },
+  "hnaj-be/app/Models/User.php": {
+    "mtime": 1784445924.2242558,
+    "ast_hash": "c97a32a5228a23ab640817b8f0d3b17e",
+    "semantic_hash": "c97a32a5228a23ab640817b8f0d3b17e"
+  },
+  "hnaj-be/app/Providers/AppServiceProvider.php": {
+    "mtime": 1784457856.3290024,
+    "ast_hash": "7e6cd2b3e6c6bc9b45946067f505286d",
+    "semantic_hash": "7e6cd2b3e6c6bc9b45946067f505286d"
+  },
+  "hnaj-be/app/Services/PlaceAiClassifier.php": {
+    "mtime": 1784521948.3736417,
+    "ast_hash": "0e458c7010c1e37f2f50a18edbfa454b",
+    "semantic_hash": "0e458c7010c1e37f2f50a18edbfa454b"
+  },
+  "hnaj-be/app/Services/PlaceClassifier.php": {
+    "mtime": 1784521948.3736417,
+    "ast_hash": "f73b7b571f755abf870f5d4fb368bb19",
+    "semantic_hash": "f73b7b571f755abf870f5d4fb368bb19"
+  },
+  "hnaj-be/app/Services/PlaceCsvParser.php": {
+    "mtime": 1784521948.3553157,
+    "ast_hash": "3d615e83a67a778ba8614eba0bbe6098",
+    "semantic_hash": "3d615e83a67a778ba8614eba0bbe6098"
+  },
+  "hnaj-be/app/Services/PlaceImportPreviewService.php": {
+    "mtime": 1784511441.7399404,
+    "ast_hash": "34e7ef0be94ef1c32d01122d00d62877",
+    "semantic_hash": "34e7ef0be94ef1c32d01122d00d62877"
+  },
+  "hnaj-be/app/Services/PlaceImportService.php": {
+    "mtime": 1784511611.661693,
+    "ast_hash": "c8c0fd83386ea56139ecf704b61088c8",
+    "semantic_hash": "c8c0fd83386ea56139ecf704b61088c8"
+  },
+  "hnaj-be/app/Services/RecommendationService.php": {
+    "mtime": 1784531475.150976,
+    "ast_hash": "adcd664ff07c49ca1b18651a43b54183",
+    "semantic_hash": "adcd664ff07c49ca1b18651a43b54183"
+  },
+  "hnaj-be/app/Support/PlaceData.php": {
+    "mtime": 1784539044.9356918,
+    "ast_hash": "f8d727f500c408faa32a02e01ab627ae",
+    "semantic_hash": "f8d727f500c408faa32a02e01ab627ae"
+  },
+  "hnaj-be/artisan": {
+    "mtime": 1779750712.0,
+    "ast_hash": "e66bb13691f6184c762c196427d8e685",
+    "semantic_hash": "e66bb13691f6184c762c196427d8e685"
+  },
+  "hnaj-be/bootstrap/app.php": {
+    "mtime": 1784446016.2213209,
+    "ast_hash": "319a92597cc5badd859ee20f471f78ba",
+    "semantic_hash": "319a92597cc5badd859ee20f471f78ba"
+  },
+  "hnaj-be/bootstrap/providers.php": {
+    "mtime": 1779750712.0,
+    "ast_hash": "888c810b5a4720916f07aa05dd2c2dd3",
+    "semantic_hash": "888c810b5a4720916f07aa05dd2c2dd3"
+  },
+  "hnaj-be/composer.json": {
+    "mtime": 1784538953.025556,
+    "ast_hash": "607a8c4d1701116f757b7779cfc65c0d",
+    "semantic_hash": "607a8c4d1701116f757b7779cfc65c0d"
+  },
+  "hnaj-be/config/app.php": {
+    "mtime": 1779750712.0,
+    "ast_hash": "276578ad68424be59d0998379ae7d4cb",
+    "semantic_hash": "276578ad68424be59d0998379ae7d4cb"
+  },
+  "hnaj-be/config/auth.php": {
+    "mtime": 1779750712.0,
+    "ast_hash": "26354511ab860b301f2a3554bc388b91",
+    "semantic_hash": "26354511ab860b301f2a3554bc388b91"
+  },
+  "hnaj-be/config/cache.php": {
+    "mtime": 1779750712.0,
+    "ast_hash": "399c7a3b4bca7e3cb9b622828682ab56",
+    "semantic_hash": "399c7a3b4bca7e3cb9b622828682ab56"
+  },
+  "hnaj-be/config/cors.php": {
+    "mtime": 1784449486.938157,
+    "ast_hash": "c5e85f820649fda0ab02ddfa22c76947",
+    "semantic_hash": "c5e85f820649fda0ab02ddfa22c76947"
+  },
+  "hnaj-be/config/database.php": {
+    "mtime": 1779750712.0,
+    "ast_hash": "594a01554ab7583541a8fb05a69f935f",
+    "semantic_hash": "594a01554ab7583541a8fb05a69f935f"
+  },
+  "hnaj-be/config/filesystems.php": {
+    "mtime": 1779750712.0,
+    "ast_hash": "bde1aa1027f0448f17348dbd93f3d7ea",
+    "semantic_hash": "bde1aa1027f0448f17348dbd93f3d7ea"
+  },
+  "hnaj-be/config/logging.php": {
+    "mtime": 1779750712.0,
+    "ast_hash": "d8255a5c07d3da72c7c9363f0c44bddd",
+    "semantic_hash": "d8255a5c07d3da72c7c9363f0c44bddd"
+  },
+  "hnaj-be/config/mail.php": {
+    "mtime": 1779750712.0,
+    "ast_hash": "18601a927b48d38337ba2077426a7d60",
+    "semantic_hash": "18601a927b48d38337ba2077426a7d60"
+  },
+  "hnaj-be/config/queue.php": {
+    "mtime": 1779750712.0,
+    "ast_hash": "f98ce92e7bf51db1fabaf8a30e12fc5a",
+    "semantic_hash": "f98ce92e7bf51db1fabaf8a30e12fc5a"
+  },
+  "hnaj-be/config/sanctum.php": {
+    "mtime": 1784445867.3791423,
+    "ast_hash": "e3887ebee464a1b2c014cb16696a2b50",
+    "semantic_hash": "e3887ebee464a1b2c014cb16696a2b50"
+  },
+  "hnaj-be/config/services.php": {
+    "mtime": 1784443794.5660074,
+    "ast_hash": "9871df41846d4ae8e335ef38827a4edd",
+    "semantic_hash": "9871df41846d4ae8e335ef38827a4edd"
+  },
+  "hnaj-be/config/session.php": {
+    "mtime": 1779750712.0,
+    "ast_hash": "5ea7169252ec3cc7fad471f5cd0d7678",
+    "semantic_hash": "5ea7169252ec3cc7fad471f5cd0d7678"
+  },
+  "hnaj-be/database/factories/UserFactory.php": {
+    "mtime": 1779750712.0,
+    "ast_hash": "1c9f381f9c2bc3027971a3bfdbe99164",
+    "semantic_hash": "1c9f381f9c2bc3027971a3bfdbe99164"
+  },
+  "hnaj-be/database/migrations/0001_01_01_000000_create_users_table.php": {
+    "mtime": 1779750712.0,
+    "ast_hash": "138280095e9d19f2ba6fb830415602e2",
+    "semantic_hash": "138280095e9d19f2ba6fb830415602e2"
+  },
+  "hnaj-be/database/migrations/0001_01_01_000001_create_cache_table.php": {
+    "mtime": 1779750712.0,
+    "ast_hash": "6952fb360e8d8b84e6f47573e4459d48",
+    "semantic_hash": "6952fb360e8d8b84e6f47573e4459d48"
+  },
+  "hnaj-be/database/migrations/0001_01_01_000002_create_jobs_table.php": {
+    "mtime": 1779750712.0,
+    "ast_hash": "b0603b9fa0a27473971da76bb0c42ee1",
+    "semantic_hash": "b0603b9fa0a27473971da76bb0c42ee1"
+  },
+  "hnaj-be/database/migrations/2026_07_18_000003_create_places_table.php": {
+    "mtime": 1784337988.7009346,
+    "ast_hash": "3110606b13009ea0fe32604722e7cf55",
+    "semantic_hash": "3110606b13009ea0fe32604722e7cf55"
+  },
+  "hnaj-be/database/migrations/2026_07_19_000004_create_categories_and_tags_tables.php": {
+    "mtime": 1784444620.695582,
+    "ast_hash": "11cccbf35d9aa975e4fdbe10be343fca",
+    "semantic_hash": "11cccbf35d9aa975e4fdbe10be343fca"
+  },
+  "hnaj-be/database/migrations/2026_07_19_000005_normalize_places_taxonomy.php": {
+    "mtime": 1784444620.7125502,
+    "ast_hash": "0524c567742f8339a521abceaa1c83b7",
+    "semantic_hash": "0524c567742f8339a521abceaa1c83b7"
+  },
+  "hnaj-be/database/migrations/2026_07_19_000006_create_place_import_tables.php": {
+    "mtime": 1784444620.7268524,
+    "ast_hash": "0255bd2326108dbe7dc2e480b05667c0",
+    "semantic_hash": "0255bd2326108dbe7dc2e480b05667c0"
+  },
+  "hnaj-be/database/migrations/2026_07_19_000007_create_roles_tables.php": {
+    "mtime": 1784445649.3950021,
+    "ast_hash": "cb9bf3c272c2d5f7d303a8e2d17b3a60",
+    "semantic_hash": "cb9bf3c272c2d5f7d303a8e2d17b3a60"
+  },
+  "hnaj-be/database/migrations/2026_07_19_000008_create_administrative_areas_table.php": {
+    "mtime": 1784448578.0433767,
+    "ast_hash": "4e9aeab8ea95adfb33666c7f83592476",
+    "semantic_hash": "4e9aeab8ea95adfb33666c7f83592476"
+  },
+  "hnaj-be/database/migrations/2026_07_19_000009_create_category_tag_table.php": {
+    "mtime": 1784461550.4896975,
+    "ast_hash": "d1a8191a4e70d71cf52dc3601d40b85b",
+    "semantic_hash": "d1a8191a4e70d71cf52dc3601d40b85b"
+  },
+  "hnaj-be/database/migrations/2026_07_19_072428_create_personal_access_tokens_table.php": {
+    "mtime": 1784445867.3731997,
+    "ast_hash": "eb77af89d184f92ec893eff344c34999",
+    "semantic_hash": "eb77af89d184f92ec893eff344c34999"
+  },
+  "hnaj-be/database/migrations/2026_07_20_000009_make_place_prices_nullable.php": {
+    "mtime": 1784521948.374893,
+    "ast_hash": "56fce6ec0d90f727c59a0be95609496d",
+    "semantic_hash": "56fce6ec0d90f727c59a0be95609496d"
+  },
+  "hnaj-be/database/migrations/2026_07_20_000009_upgrade_place_import_batches.php": {
+    "mtime": 1784511441.7403173,
+    "ast_hash": "78bd45e67714909ceccccda0fb74a19a",
+    "semantic_hash": "78bd45e67714909ceccccda0fb74a19a"
+  },
+  "hnaj-be/database/migrations/2026_07_20_000010_remove_legacy_tags_column_from_places.php": {
+    "mtime": 1784518619.8320506,
+    "ast_hash": "96cfef19b6e5c2a112e6db564290db99",
+    "semantic_hash": "96cfef19b6e5c2a112e6db564290db99"
+  },
+  "hnaj-be/database/seeders/AdministrativeAreaSeeder.php": {
+    "mtime": 1784448578.0968208,
+    "ast_hash": "4f4b691304f52a076c877d9c507f25b2",
+    "semantic_hash": "4f4b691304f52a076c877d9c507f25b2"
+  },
+  "hnaj-be/database/seeders/DatabaseSeeder.php": {
+    "mtime": 1784461550.4894996,
+    "ast_hash": "97f3938dcc819370155205f87fe97181",
+    "semantic_hash": "97f3938dcc819370155205f87fe97181"
+  },
+  "hnaj-be/database/seeders/RoleSeeder.php": {
+    "mtime": 1784461805.768772,
+    "ast_hash": "f9da3a85cc50ea7bac5c87119b6873c4",
+    "semantic_hash": "f9da3a85cc50ea7bac5c87119b6873c4"
+  },
+  "hnaj-be/database/seeders/TaxonomySeeder.php": {
+    "mtime": 1784461556.7801383,
+    "ast_hash": "66545a4eb9eddb66cb7bb97d786ff564",
+    "semantic_hash": "66545a4eb9eddb66cb7bb97d786ff564"
+  },
+  "hnaj-be/docker/entrypoint.sh": {
+    "mtime": 1784280825.4730537,
+    "ast_hash": "36ce981f8440dfa297b2a4448e8becac",
+    "semantic_hash": "36ce981f8440dfa297b2a4448e8becac"
+  },
+  "hnaj-be/package.json": {
+    "mtime": 1779750712.0,
+    "ast_hash": "0cdafb1ed5ed16e0ad8d871d33e3eafc",
+    "semantic_hash": "0cdafb1ed5ed16e0ad8d871d33e3eafc"
+  },
+  "hnaj-be/public/index.php": {
+    "mtime": 1779750712.0,
+    "ast_hash": "d8eda274115af5fd2aaa8230af329ef7",
+    "semantic_hash": "d8eda274115af5fd2aaa8230af329ef7"
+  },
+  "hnaj-be/resources/js/app.js": {
+    "mtime": 1779750712.0,
+    "ast_hash": "b519d08ef66fd54910edbedba6181ec2",
+    "semantic_hash": "b519d08ef66fd54910edbedba6181ec2"
+  },
+  "hnaj-be/resources/views/welcome.blade.php": {
+    "mtime": 1779750712.0,
+    "ast_hash": "1a03818ea91deb4f3989c6c994e5867c",
+    "semantic_hash": "1a03818ea91deb4f3989c6c994e5867c"
+  },
+  "hnaj-be/routes/api.php": {
+    "mtime": 1784531475.1497467,
+    "ast_hash": "57d84022829b961ebb82ea1a1b73c58d",
+    "semantic_hash": "57d84022829b961ebb82ea1a1b73c58d"
+  },
+  "hnaj-be/routes/console.php": {
+    "mtime": 1779750712.0,
+    "ast_hash": "3c6ce2e6d16444282b24a9aa63885563",
+    "semantic_hash": "3c6ce2e6d16444282b24a9aa63885563"
+  },
+  "hnaj-be/routes/web.php": {
+    "mtime": 1779750712.0,
+    "ast_hash": "84625c52e743b1a4178bb27b7afb3615",
+    "semantic_hash": "84625c52e743b1a4178bb27b7afb3615"
+  },
+  "hnaj-be/vite.config.js": {
+    "mtime": 1779750712.0,
+    "ast_hash": "8ef22d264079dab94f6d36526b0cb1bc",
+    "semantic_hash": "8ef22d264079dab94f6d36526b0cb1bc"
+  },
+  "hnaj-fe/.oxlintrc.json": {
+    "mtime": 1784282274.8739634,
+    "ast_hash": "029f4905006c1fffd96bc863e2d98d3e",
+    "semantic_hash": "029f4905006c1fffd96bc863e2d98d3e"
+  },
+  "hnaj-fe/package.json": {
+    "mtime": 1784282274.8758314,
+    "ast_hash": "f29541926642a3830d213993635f55ae",
+    "semantic_hash": "f29541926642a3830d213993635f55ae"
+  },
+  "hnaj-fe/src/App.tsx": {
+    "mtime": 1784539652.5504847,
+    "ast_hash": "00f2e3951352fbe42b06b259571d41dc",
+    "semantic_hash": "00f2e3951352fbe42b06b259571d41dc"
+  },
+  "hnaj-fe/src/PlaceDetailPage.tsx": {
+    "mtime": 1784539707.1806588,
+    "ast_hash": "bdde290199f12dd4dd21b14ca7874b2f",
+    "semantic_hash": "bdde290199f12dd4dd21b14ca7874b2f"
+  },
+  "hnaj-fe/src/api.ts": {
+    "mtime": 1784539707.1779163,
+    "ast_hash": "b17193abe984d848805a3d4ce6fb4651",
+    "semantic_hash": "b17193abe984d848805a3d4ce6fb4651"
+  },
+  "hnaj-fe/src/main.tsx": {
+    "mtime": 1784539652.5504847,
+    "ast_hash": "673fc827144392055f3218e313689dcf",
+    "semantic_hash": "673fc827144392055f3218e313689dcf"
+  },
+  "hnaj-fe/src/types.ts": {
+    "mtime": 1784538953.025556,
+    "ast_hash": "8c5a9c9403940baa42d978541f1c3e94",
+    "semantic_hash": "8c5a9c9403940baa42d978541f1c3e94"
+  },
+  "hnaj-fe/tsconfig.app.json": {
+    "mtime": 1784282274.8755662,
+    "ast_hash": "5f2dafd737dea8a4ddcbb10f5113ac5a",
+    "semantic_hash": "5f2dafd737dea8a4ddcbb10f5113ac5a"
+  },
+  "hnaj-fe/tsconfig.json": {
+    "mtime": 1784282274.8756528,
+    "ast_hash": "a3d39fa780ebff65444de257f291ce6c",
+    "semantic_hash": "a3d39fa780ebff65444de257f291ce6c"
+  },
+  "hnaj-fe/tsconfig.node.json": {
+    "mtime": 1784282274.8757396,
+    "ast_hash": "f9cb81ddcea69ffdab672fc8c48dca66",
+    "semantic_hash": "f9cb81ddcea69ffdab672fc8c48dca66"
+  },
+  "hnaj-fe/vite.config.ts": {
+    "mtime": 1784466963.345646,
+    "ast_hash": "cec9a02803763b0e2b7f5112d3ca327b",
+    "semantic_hash": "cec9a02803763b0e2b7f5112d3ca327b"
+  },
+  "skills-lock.json": {
+    "mtime": 1784278097.9305534,
+    "ast_hash": "0ebc6e50f088c135d4a39386a6625685",
+    "semantic_hash": "0ebc6e50f088c135d4a39386a6625685"
+  }
+}

@@ -48,6 +48,21 @@ Lần đầu chạy, BE entrypoint sẽ tự động:
 
 FE container sẽ tự chạy `npm ci` (nếu cần) và `npm run dev` trên port 5173.
 
+## Graphify trong Docker
+
+Graphify được đóng gói thành service riêng trong profile `tools`. Package PyPI
+chính thức là `graphifyy==0.9.20`, còn lệnh sử dụng là `graphify`.
+
+```bash
+docker compose --profile tools build graphify
+docker compose --profile tools run --rm graphify --version
+docker compose --profile tools run --rm graphify extract /workspace --code-only --force
+```
+
+Lệnh `--code-only` phân tích AST cục bộ, không cần API key và ghi kết quả vào
+`graphify-out/`. Phân tích tài liệu, PDF, ảnh hoặc media có thể cần cấu hình
+LLM backend/API key; xem [DOCKER.md](DOCKER.md) để biết các lệnh query.
+
 ## URL truy cập
 
 | Thành phần | URL |

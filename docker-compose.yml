@@ -35,12 +35,46 @@ services:
     ports:
       - "${FE_PORT:-5173}:5173"
     environment:
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
     command: sh -c 'if [ -f package.json ] && [ ! -d node_modules/.bin ]; then npm ci; fi; npm run dev -- --host 0.0.0.0'
     depends_on:
       - be
+
+  import-worker:
+    build:
+      context: ./hnaj-be
+      dockerfile: Dockerfile
+    container_name: hnaj-import-worker
+    working_dir: /var/www/html
+    entrypoint: []
+    volumes:
+      - ./hnaj-be:/var/www/html
+      - be_vendor:/var/www/html/vendor
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: be
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-hnaj}
+      DB_USERNAME: ${DB_USERNAME:-hnaj}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+    command: php artisan queue:work database --queue=imports --sleep=2 --tries=1 --timeout=180
+    depends_on:
+      - be
+
+  graphify:
+    build:
+      context: ./docker/graphify
+      dockerfile: Dockerfile
+    container_name: hnaj-graphify
+    profiles:
+      - tools
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace
+      - graphify_cache:/root/.cache/graphify
 
 volumes:
   be_vendor:
   mysql_data:
   fe_node_modules:
+  graphify_cache:

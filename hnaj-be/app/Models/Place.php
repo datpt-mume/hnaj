@@ -72,6 +72,8 @@ final class Place extends Model
 
     protected function priceDisplay(): Attribute
     {
-        return Attribute::get(fn (): string => number_format(($this->price_min + $this->price_max) / 2, 0, ',', '.').' VND');
+        return Attribute::get(fn (): ?string => $this->price_min === null || $this->price_max === null
+            ? null
+            : number_format(($this->price_min + $this->price_max) / 2, 0, ',', '.').' VND');
     }
 }
