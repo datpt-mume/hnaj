@@ -1,0 +1,76 @@
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: hnaj-docker/backend/Dockerfile
+    env_file:
+      - .env
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+    volumes:
+      - ../hnaj-be:/var/www/html
+      - backend_vendor:/var/www/html/vendor
+      - backend_storage:/var/www/html/storage
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - hnaj
+
+  backend-web:
+    image: nginx:1.27-alpine
+    volumes:
+      - ../hnaj-be:/var/www/html:ro
+      - backend_storage:/var/www/html/storage:ro
+      - ./backend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      backend:
+        condition: service_started
+    expose:
+      - "80"
+    ports:
+      - "${BACKEND_PORT:-8081}:80"
+    networks:
+      - hnaj
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: hnaj-docker/frontend/Dockerfile
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      backend-web:
+        condition: service_started
+    networks:
+      - hnaj
+
+  mysql:
+    image: mysql:8.4
+    env_file:
+      - .env
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    networks:
+      - hnaj
+
+networks:
+  hnaj:
+    driver: bridge
+
+volumes:
+  backend_vendor:
+  backend_storage:
+  mysql_data:
