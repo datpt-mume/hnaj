@@ -61,20 +61,7 @@ services:
     depends_on:
       - be
 
-  graphify:
-    build:
-      context: ./docker/graphify
-      dockerfile: Dockerfile
-    container_name: hnaj-graphify
-    profiles:
-      - tools
-    working_dir: /workspace
-    volumes:
-      - ./:/workspace
-      - graphify_cache:/root/.cache/graphify
-
 volumes:
   be_vendor:
   mysql_data:
   fe_node_modules:
-  graphify_cache:
