@@ -264,7 +264,12 @@ Giao diện phải:
 
 - Resource naming, URL và pluralization phải nhất quán.
 - Dùng HTTP method và status code đúng ngữ nghĩa.
-- Request/response/error format phải nhất quán với contract hiện có.
+- Mọi API response phải dùng chung envelope success hoặc error; không trả payload JSON tự do theo từng endpoint.
+- Success response có dạng `{ "success": true, "message": "...", "data": ..., "meta": {} }`; `meta` là tùy chọn.
+- Error response có dạng `{ "success": false, "message": "...", "errors": {}, "code": "..." }`; `errors` và `code` là tùy chọn.
+- `success` phải phản ánh kết quả nghiệp vụ độc lập với HTTP status; dùng HTTP method và status code đúng ngữ nghĩa.
+- Validation, 404 và exception phát sinh từ API phải được chuyển về error envelope chung; không lộ stack trace, query, secret hoặc chi tiết nội bộ.
+- Request/response/error format phải nhất quán với contract và tài liệu API.
 - Danh sách có thể lớn phải hỗ trợ pagination; filter/sort/search phải có contract rõ ràng.
 - Validation error phải có cấu trúc ổn định để frontend xử lý.
 - Không lộ database schema, exception nội bộ hoặc field nhạy cảm.
