@@ -1,9 +1,8 @@
 FROM composer:2 AS composer
 
-FROM php:8.3-fpm-bookworm
+FROM php:8.3-fpm-bookworm AS base
 
-ENV APP_ENV=production \
-    COMPOSER_ALLOW_SUPERUSER=1
+ENV COMPOSER_ALLOW_SUPERUSER=1
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -27,6 +26,32 @@ COPY --from=composer /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 
 COPY hnaj-be/composer.json hnaj-be/composer.lock ./
+
+FROM base AS development
+
+ENV APP_ENV=local \
+    APP_DEBUG=true
+
+RUN composer install \
+    --no-interaction \
+    --no-progress \
+    --prefer-dist \
+    --no-scripts
+
+COPY hnaj-be/ .
+
+RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache
+
+USER www-data
+
+CMD ["php-fpm", "-F"]
+
+FROM base AS production
+
+ENV APP_ENV=production \
+    APP_DEBUG=false
+
 RUN composer install \
     --no-dev \
     --no-interaction \
