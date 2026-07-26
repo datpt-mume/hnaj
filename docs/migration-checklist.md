@@ -189,8 +189,8 @@ Danh sách phẳng các quận, huyện và thị xã thuộc Hà Nội; không 
 - [ ] `id`, `place_id` — FK tới `places.id`.
 - [ ] `day_of_week` dạng số theo quy ước application.
 - [ ] `schedule_type`: `regular`, `all_day`, `closed`.
-- [ ] `opens_at`, `closes_at` nullable; bắt buộc khi `schedule_type = regular`.
-- [ ] `crosses_midnight`.
+- [ ] `opens_at`, `closes_at` nullable; bắt buộc khi `schedule_type = regular`; ứng dụng chuẩn hóa `HH:MM`.
+- [ ] Không hỗ trợ mở qua nửa đêm trong MVP; không có `crosses_midnight`.
 - [ ] timestamps.
 
 **Index/constraint:**
@@ -257,7 +257,7 @@ Danh sách phẳng các quận, huyện và thị xã thuộc Hà Nội; không 
 
 - [ ] `place_id` — FK tới `places.id`.
 - [ ] `anonymous_key_hash` — hash random ID từ cookie; không lưu IP thô.
-- [ ] `visit_date`, `visited_at`, `source`, timestamps.
+- [ ] `visit_date`, `visited_at`, `source`, timestamps (`created_at`, `updated_at`).
 - [ ] Unique `place_id + anonymous_key_hash + visit_date`.
 - [ ] Index `place_id + visit_date`.
 - [ ] Cookie bị xóa/hết hạn được xem như anonymous visitor mới.
@@ -279,6 +279,9 @@ Danh sách phẳng các quận, huyện và thị xã thuộc Hà Nội; không 
 - [ ] Index `place_id + status`, `user_id`.
 - [ ] Application kiểm tra đã có visit event trước khi create/update.
 - [ ] Application kiểm tra rating nằm trong `1.0`–`5.0` theo bước `0.5`.
+- [ ] Review body nullable; review không có reply trực tiếp.
+- [ ] `review_images`: `review_id`, `image_url`, `alt_text`, `sort_order`, timestamps và `deleted_at`.
+- [ ] `review_images` có FK `review_id` cascade khi xóa review và index `review_id + sort_order`.
 
 #### `comments`
 
@@ -288,6 +291,8 @@ Danh sách phẳng các quận, huyện và thị xã thuộc Hà Nội; không 
 - [ ] `body`, `status`, timestamps và `deleted_at`.
 - [ ] Index `place_id + status`, `parent_id`, `user_id`.
 - [ ] Application kiểm tra quyền reply của Sub-admin theo `place_managers`.
+- [ ] `comment_images`: `comment_id`, `image_url`, `alt_text`, `sort_order`, timestamps và `deleted_at`.
+- [ ] `comment_images` có FK `comment_id` cascade khi xóa comment và index `comment_id + sort_order`.
 
 ### 3.13. Migration 13 — `place_requests` và `manager_applications`
 

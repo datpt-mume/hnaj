@@ -249,9 +249,8 @@ Khung giờ theo ngày trong tuần. Ngày không có dữ liệu hợp lệ th�
 | `place_id` | BIGINT UNSIGNED | Không | FK `places.id` |
 | `day_of_week` | TINYINT UNSIGNED | Không | 0–6 theo quy ước ứng dụng |
 | `schedule_type` | VARCHAR | Không | `regular`, `all_day`, `closed` |
-| `opens_at` | TIME | Có | Bắt buộc khi `schedule_type = regular` |
-| `closes_at` | TIME | Có | Bắt buộc khi `schedule_type = regular` |
-| `crosses_midnight` | BOOLEAN | Không | Có qua nửa đêm hay không; dùng cho `regular` |
+| `opens_at` | TIME | Có | Bắt buộc khi `schedule_type = regular`; ứng dụng dùng `HH:MM` |
+| `closes_at` | TIME | Có | Bắt buộc khi `schedule_type = regular`; ứng dụng dùng `HH:MM` |
 | `created_at`, `updated_at` | DATETIME | Không | Timestamps |
 
 Có thể có nhiều slot trong một ngày. `all_day` và `closed` không cần giờ mở/đóng. Ngày lễ/ngoại lệ không thuộc phạm vi.
@@ -333,7 +332,7 @@ Visit của khách chưa đăng nhập, dùng cho hot, không hiển thị trong
 | `visit_date` | DATE | Không | Ngày nghiệp vụ |
 | `visited_at` | DATETIME | Không | Thời điểm ghi nhận |
 | `source` | VARCHAR | Có | Nguồn click |
-| `created_at` | DATETIME | Không | Timestamps |
+| `created_at`, `updated_at` | DATETIME | Không | Timestamps |
 
 **Unique:** `place_id + anonymous_key_hash + visit_date`.
 
@@ -356,6 +355,24 @@ Một rating/review của một User cho một place.
 
 **Unique:** `user_id + place_id`. Backend phải kiểm tra visit trước khi create/update.
 
+Review có thể có nhiều ảnh trong `review_images`; review không có reply trực tiếp.
+
+#### `review_images`
+
+Ảnh đính kèm review, lưu URL công khai và xóa mềm.
+
+| Cột | Kiểu logic | Null | Ràng buộc / ý nghĩa |
+|---|---|---:|---|
+| `id` | BIGINT UNSIGNED | Không | PK |
+| `review_id` | BIGINT UNSIGNED | Không | FK `reviews.id`, xóa ảnh khi xóa review |
+| `image_url` | TEXT | Không | URL công khai |
+| `alt_text` | VARCHAR | Có | Mô tả ảnh |
+| `sort_order` | SMALLINT UNSIGNED | Không | Thứ tự hiển thị, mặc định 0 |
+| `created_at`, `updated_at` | DATETIME | Không | Timestamps |
+| `deleted_at` | DATETIME | Có | Xóa mềm |
+
+**Index:** `review_id + sort_order`.
+
 #### `comments`
 
 Comment/câu hỏi của User và reply của Sub-admin/Admin.
@@ -372,6 +389,24 @@ Comment/câu hỏi của User và reply của Sub-admin/Admin.
 | `deleted_at` | DATETIME | Có | Xóa mềm |
 
 Sub-admin chỉ được reply comment thuộc place mình quản lý. Admin có quyền moderation.
+
+Comment có thể có nhiều ảnh trong `comment_images`.
+
+#### `comment_images`
+
+Ảnh đính kèm comment, lưu URL công khai và xóa mềm.
+
+| Cột | Kiểu logic | Null | Ràng buộc / ý nghĩa |
+|---|---|---:|---|
+| `id` | BIGINT UNSIGNED | Không | PK |
+| `comment_id` | BIGINT UNSIGNED | Không | FK `comments.id`, xóa ảnh khi xóa comment |
+| `image_url` | TEXT | Không | URL công khai |
+| `alt_text` | VARCHAR | Có | Mô tả ảnh |
+| `sort_order` | SMALLINT UNSIGNED | Không | Thứ tự hiển thị, mặc định 0 |
+| `created_at`, `updated_at` | DATETIME | Không | Timestamps |
+| `deleted_at` | DATETIME | Có | Xóa mềm |
+
+**Index:** `comment_id + sort_order`.
 
 ### 3.5. Request và approval
 

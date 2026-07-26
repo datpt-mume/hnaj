@@ -35,8 +35,8 @@ class Review extends Model
         return $this->belongsTo(Place::class);
     }
 
-    public function comments(): HasMany
+    public function images(): HasMany
     {
-        return $this->hasMany(Comment::class);
+        return $this->hasMany(ReviewImage::class);
     }
 }

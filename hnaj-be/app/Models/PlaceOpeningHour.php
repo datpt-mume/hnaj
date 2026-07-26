@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ScheduleType;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -14,16 +15,28 @@ class PlaceOpeningHour extends Model
         'schedule_type',
         'opens_at',
         'closes_at',
-        'crosses_midnight',
     ];
 
     protected $casts = [
         'day_of_week' => 'integer',
         'schedule_type' => ScheduleType::class,
-        'opens_at' => 'datetime:H:i',
-        'closes_at' => 'datetime:H:i',
-        'crosses_midnight' => 'boolean',
     ];
+
+    protected function opensAt(): Attribute
+    {
+        return Attribute::make(
+            get: static fn (?string $value): ?string => $value === null ? null : substr($value, 0, 5),
+            set: static fn (?string $value): ?string => $value === null ? null : substr($value, 0, 5) . ':00',
+        );
+    }
+
+    protected function closesAt(): Attribute
+    {
+        return Attribute::make(
+            get: static fn (?string $value): ?string => $value === null ? null : substr($value, 0, 5),
+            set: static fn (?string $value): ?string => $value === null ? null : substr($value, 0, 5) . ':00',
+        );
+    }
 
     public function place(): BelongsTo
     {

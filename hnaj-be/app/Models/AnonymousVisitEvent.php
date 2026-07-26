@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AnonymousVisitEvent extends Model
 {
-    public $timestamps = false;
-
     protected $fillable = [
         'place_id',
         'anonymous_key_hash',

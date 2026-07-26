@@ -258,16 +258,16 @@ Hệ quả cần lưu ý: dữ liệu cá nhân hóa trong tương lai sẽ đư
 Quy tắc đã chốt:
 
 - **Điều kiện rating:** User chỉ được rating một place khi đã có ít nhất một visit event với place đó. Rating phản ánh trải nghiệm thực tế, không phải cảm nhận từ danh sách.
-- **Số lượng rating:** mỗi User chỉ có **một** rating duy nhất cho một place. Lần đánh giá sau là cập nhật rating hiện có, không tạo bản ghi mới.
-- **Comment:** không yêu cầu visit event và không yêu cầu rating; chỉ yêu cầu đăng nhập.
+- **Số lượng rating:** mỗi User chỉ có **một** review duy nhất cho một place. Lần đánh giá sau là cập nhật review hiện có, không tạo bản ghi mới.
+- **Review:** bắt buộc có rating sao; nội dung văn bản là tùy chọn; có thể đính kèm nhiều ảnh.
+- **Comment:** không yêu cầu visit event và không yêu cầu rating; chỉ yêu cầu đăng nhập. Một user có thể tạo nhiều comment cho một place; mỗi comment có thể đính kèm nhiều ảnh.
+- **Reply:** comment có thể trả lời comment khác bằng `parent_id`. User, Sub-admin và Admin có thể reply theo quyền; Sub-admin chỉ được reply nội dung thuộc place mình quản lý. Review không có reply trực tiếp.
 - **Mô hình dữ liệu:** review/rating và comment là hai loại nội dung riêng biệt. Review gắn với ràng buộc một-User-một-place; comment/câu hỏi không có ràng buộc đó và có thể có nhiều bản ghi.
 
 Chi tiết khác:
 
 - Rating theo thang 1–5 sao, cho phép bước 0.5 sao.
-- Review là nội dung văn bản đi kèm rating, không bắt buộc.
-- User được sửa và xóa rating, review và comment của chính mình.
-- Sub-admin có thể reply review, comment hoặc câu hỏi thuộc place mình quản lý.
+- User được sửa và xóa review và comment của chính mình.
 - Admin có quyền ẩn, gỡ hoặc kiểm duyệt nội dung vi phạm.
 
 > **TBD:** Có cần báo cáo nội dung và cơ chế moderation chi tiết không.
