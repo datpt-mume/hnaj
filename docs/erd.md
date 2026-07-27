@@ -247,7 +247,7 @@ Khung giờ theo ngày trong tuần. Ngày không có dữ liệu hợp lệ th�
 |---|---|---:|---|
 | `id` | BIGINT UNSIGNED | Không | PK |
 | `place_id` | BIGINT UNSIGNED | Không | FK `places.id` |
-| `day_of_week` | TINYINT UNSIGNED | Không | 0–6 theo quy ước ứng dụng |
+| `day_of_week` | TINYINT UNSIGNED | Không | 2–8 theo quy ước ứng dụng: 2=Thứ Hai, ..., 8=Chủ Nhật |
 | `schedule_type` | VARCHAR | Không | `regular`, `all_day`, `closed` |
 | `opens_at` | TIME | Có | Bắt buộc khi `schedule_type = regular`; ứng dụng dùng `HH:MM` |
 | `closes_at` | TIME | Có | Bắt buộc khi `schedule_type = regular`; ứng dụng dùng `HH:MM` |

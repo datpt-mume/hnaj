@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'place_import_ai' => [
+        'base_url' => env('PLACE_IMPORT_AI_BASE_URL'),
+        'api_key' => env('PLACE_IMPORT_AI_API_KEY'),
+        'model' => env('PLACE_IMPORT_AI_MODEL', 'deepseek-v4-flash'),
+        'timeout' => (int) env('PLACE_IMPORT_AI_TIMEOUT', 120),
+        'retries' => (int) env('PLACE_IMPORT_AI_RETRIES', 2),
+    ],
+
 ];
