@@ -33,6 +33,7 @@ Chạy từ thư mục gốc repository:
 
 ```bash
 cp hnaj-docker/.env.example hnaj-docker/.env
+cp hnaj-be/.env.example hnaj-be/.env
 cd hnaj-docker
 docker compose --env-file .env config --quiet
 docker compose --env-file .env build
@@ -76,12 +77,14 @@ docker compose --env-file .env exec frontend npm run lint
 docker compose --env-file .env exec frontend npm run build
 ```
 
-## Khi nào cần rebuild?
+## Khi nào cần rebuild hoặc restart?
 
 - **Không cần rebuild:** sửa PHP/React source, route, controller, component hoặc CSS khi đang bind mount development.
 - **Cần rebuild backend:** đổi `hnaj-docker/backend/Dockerfile`, PHP extension, package hệ thống, `composer.json` hoặc `composer.lock`.
 - **Cần rebuild frontend:** đổi `hnaj-docker/frontend/Dockerfile`, `package.json` hoặc `package-lock.json`. Sau đó `npm ci` trong image sẽ được chạy lại.
-- **Không cần rebuild vì đổi `.env`:** restart/recreate container để nhận biến môi trường mới; không commit `.env` thật.
+- **Đổi cấu hình Laravel trong `hnaj-be/.env`:** backend đọc trực tiếp file được bind mount. Với tiến trình Artisan mới, cấu hình có hiệu lực sau `php artisan config:clear` nếu config từng được cache; không cần recreate container.
+- **Đổi biến `MYSQL_*` trong `hnaj-be/.env`:** phải recreate MySQL để environment của container thay đổi. Các biến khởi tạo chỉ có tác dụng với database volume mới; không tự thay credential của dữ liệu đã tồn tại.
+- **Đổi port trong `hnaj-docker/.env`:** recreate service tương ứng để Compose áp dụng port mới.
 
 ## Database và an toàn dữ liệu
 
@@ -97,10 +100,17 @@ Các lệnh trên có thể xóa dữ liệu database. Volume mới là database
 
 ## Secret và file môi trường
 
-- `hnaj-docker/.env.example` chỉ chứa giá trị mẫu an toàn.
-- `hnaj-docker/.env` chứa credential local và bị ignore.
-- `hnaj-be/.env` chứa `APP_KEY` và cấu hình Laravel local; file bị ignore.
+- `hnaj-docker/.env.example` và `hnaj-docker/.env` chỉ chứa cấu hình của Compose như project name và published port.
+- `hnaj-be/.env` là nguồn cấu hình backend, AI API và database local; MySQL cũng đọc các biến `MYSQL_*` từ file này khi tạo container.
+- Frontend đặt biến ứng dụng có prefix `VITE_` trong file môi trường thuộc `hnaj-fe` khi cần. `VITE_API_PROXY_TARGET` trong Compose là địa chỉ mạng nội bộ chỉ dành cho container development.
 - Không đưa secret, password thật, private key hoặc dump dữ liệu nhạy cảm vào Git.
+
+Khi thay cấu hình AI importer trong `hnaj-be/.env`, chạy:
+
+```bash
+docker compose --env-file .env exec backend php artisan config:clear
+docker compose --env-file .env exec backend php artisan db:seed --class=PlaceCsvImportSeeder
+```
 
 ## Đường nâng cấp production
 

@@ -6,8 +6,6 @@ services:
       dockerfile: hnaj-docker/backend/Dockerfile
       target: development
     working_dir: /var/www/html
-    env_file:
-      - ../hnaj-be/.env
     volumes:
       - ../hnaj-be:/var/www/html
       - backend_vendor:/var/www/html/vendor
