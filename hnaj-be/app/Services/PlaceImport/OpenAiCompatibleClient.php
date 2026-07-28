@@ -7,13 +7,11 @@ use RuntimeException;
 
 class OpenAiCompatibleClient
 {
-    public function __construct(private readonly PlaceImportPrompt $prompt)
-    {
-    }
+    public function __construct(private readonly PlaceImportPrompt $prompt) {}
 
     /**
-     * @param array<int, array<string, mixed>> $records
-     * @param array<string, mixed> $taxonomy
+     * @param  array<int, array<string, mixed>>  $records
+     * @param  array<string, mixed>  $taxonomy
      * @return array<string, mixed>
      */
     public function classify(array $records, array $taxonomy): array
@@ -22,7 +20,7 @@ class OpenAiCompatibleClient
         $apiKey = (string) config('services.place_import_ai.api_key');
 
         if ($baseUrl === '' || $apiKey === '') {
-            throw new RuntimeException('Place import AI is not configured.');
+            throw new RuntimeException('ai_config_missing: Place import AI is not configured.');
         }
 
         $response = Http::withToken($apiKey)
@@ -30,7 +28,7 @@ class OpenAiCompatibleClient
             ->asJson()
             ->timeout((int) config('services.place_import_ai.timeout', 120))
             ->retry((int) config('services.place_import_ai.retries', 2), 1000)
-            ->post($baseUrl . '/chat/completions', [
+            ->post($baseUrl.'/chat/completions', [
                 'model' => config('services.place_import_ai.model', 'deepseek-v4-flash'),
                 'temperature' => 0,
                 'response_format' => ['type' => 'json_object'],
@@ -47,19 +45,19 @@ class OpenAiCompatibleClient
             ]);
 
         if ($response->failed()) {
-            throw new RuntimeException('Place import AI request failed with HTTP status ' . $response->status() . '.');
+            throw new RuntimeException('ai_http_failed: Place import AI request failed with HTTP status '.$response->status().'.');
         }
 
         $content = $response->json('choices.0.message.content');
 
         if (! is_string($content) || trim($content) === '') {
-            throw new RuntimeException('Place import AI response did not contain message content.');
+            throw new RuntimeException('ai_message_content_missing: Place import AI response did not contain message content.');
         }
 
         $decoded = json_decode($content, true);
 
         if (! is_array($decoded)) {
-            throw new RuntimeException('Place import AI response was not valid JSON.');
+            throw new RuntimeException('ai_invalid_json: Place import AI response was not valid JSON.');
         }
 
         return $decoded;

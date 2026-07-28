@@ -69,28 +69,38 @@ class CsvPlaceReader
         $mapsUrl = $this->stringValue($row['link'] ?? null);
         $latitude = $this->decimalValue($row['latitude'] ?? null);
         $longitude = $this->decimalValue($row['longitude'] ?? null);
+        $googlePlaceId = $this->stringValue($row['place_id'] ?? null);
 
-        if ($name === null || $address === null || $mapsUrl === null || $latitude === null || $longitude === null) {
+        if ($name === null || $address === null || $mapsUrl === null || $latitude === null || $longitude === null || $googlePlaceId === null) {
             return null;
         }
 
-        $placeId = $this->stringValue($row['place_id'] ?? null);
-        $openingHours = $this->parseOpeningHours($row['open_hours'] ?? null);
+        $recordRef = sprintf('%s:%d', basename($path), $line);
 
         return [
-            'record_ref' => sprintf('%s:%d', basename($path), $line),
-            'name' => $name,
-            'address_text' => $address,
-            'google_place_id' => $placeId,
-            'phone' => $this->stringValue($row['phone'] ?? null),
-            'website_url' => $this->stringValue($row['website'] ?? null),
-            'google_maps_url' => $mapsUrl,
-            'latitude' => $latitude,
-            'longitude' => $longitude,
-            'price_range' => $this->stringValue($row['price_range'] ?? null),
-            'description' => $this->stringValue($row['descriptions'] ?? null),
-            'thumbnail_url' => $this->stringValue($row['thumbnail'] ?? null),
-            'opening_hours_source' => $openingHours,
+            'record_ref' => $recordRef,
+            'import_data' => [
+                'name' => $name,
+                'address_text' => $address,
+                'google_place_id' => $googlePlaceId,
+                'phone' => $this->stringValue($row['phone'] ?? null),
+                'website_url' => $this->stringValue($row['website'] ?? null),
+                'google_maps_url' => $mapsUrl,
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+                'price_range' => $this->stringValue($row['price_range'] ?? null),
+                'description' => $this->stringValue($row['descriptions'] ?? null),
+                'thumbnail_url' => $this->stringValue($row['thumbnail'] ?? null),
+            ],
+            'ai_data' => [
+                'record_ref' => $recordRef,
+                'title' => $name,
+                'category' => $this->stringValue($row['category'] ?? null),
+                'address' => $address,
+                'open_hours' => $this->parseJsonValue($row['open_hours'] ?? null),
+                'descriptions' => $this->stringValue($row['descriptions'] ?? null),
+                'about' => $this->parseJsonValue($row['about'] ?? null),
+            ],
         ];
     }
 
@@ -111,7 +121,7 @@ class CsvPlaceReader
     /**
      * @return array<string, mixed>|string|null
      */
-    private function parseOpeningHours(mixed $value): array|string|null
+    private function parseJsonValue(mixed $value): array|string|null
     {
         $value = $this->stringValue($value);
 

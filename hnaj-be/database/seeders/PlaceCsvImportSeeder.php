@@ -10,6 +10,7 @@ use App\Services\PlaceImport\PlaceImportPersistence;
 use App\Services\PlaceImport\TaxonomyProvider;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 use Throwable;
 
 class PlaceCsvImportSeeder extends Seeder
@@ -19,17 +20,7 @@ class PlaceCsvImportSeeder extends Seeder
     /**
      * @var array<string, int>
      */
-    private array $stats = [
-        'rows' => 0,
-        'invalid_rows' => 0,
-        'pre_ai_filtered' => 0,
-        'duplicates' => 0,
-        'batches' => 0,
-        'batch_failures' => 0,
-        'ai_rejected' => 0,
-        'imported' => 0,
-        'persistence_failures' => 0,
-    ];
+    private array $stats = [];
 
     public function __construct(
         private readonly CsvPlaceReader $reader,
@@ -42,80 +33,85 @@ class PlaceCsvImportSeeder extends Seeder
 
     public function run(): void
     {
+        $this->resetState();
         $taxonomy = $this->taxonomyProvider->get();
-        $batch = [];
-        $files = glob(database_path('hanoi_Z*.csv')) ?: [];
+        $taxonomySummary = $this->taxonomySummary($taxonomy);
 
-        sort($files);
+        if ($taxonomySummary['empty_sections'] !== []) {
+            Log::error('Place CSV import taxonomy is incomplete.', $taxonomySummary);
 
-        foreach ($files as $file) {
+            throw new RuntimeException('Place CSV import requires active categories, tags, and districts.');
+        }
+
+        /** @var array<string, array<string, mixed>> $sourceRecordsByRef */
+        $sourceRecordsByRef = [];
+        $eligibleRecordRefs = [];
+
+        foreach ($this->csvFiles() as $file) {
             $skippedBeforeFile = $this->reader->skippedRows();
 
             foreach ($this->reader->read($file) as $record) {
                 $this->stats['rows']++;
+                $googlePlaceId = $record['import_data']['google_place_id'];
 
-                if (! $this->isEligibleForAi($record, $taxonomy)) {
-                    $this->stats['pre_ai_filtered']++;
-
-                    continue;
-                }
-
-                if ($this->duplicates->isDuplicate($record)) {
+                if ($this->duplicates->isDuplicate($googlePlaceId)) {
                     $this->stats['duplicates']++;
 
                     continue;
                 }
 
-                $batch[] = $record;
-
-                if (count($batch) === self::BATCH_SIZE) {
-                    $this->processBatch($batch, $taxonomy);
-                    $batch = [];
-                }
+                $recordRef = $record['record_ref'];
+                $sourceRecordsByRef[$recordRef] = $record;
+                $eligibleRecordRefs[] = $recordRef;
             }
 
             $this->stats['invalid_rows'] += $this->reader->skippedRows() - $skippedBeforeFile;
         }
 
-        if ($batch !== []) {
-            $this->processBatch($batch, $taxonomy);
+        foreach (array_chunk($eligibleRecordRefs, self::BATCH_SIZE) as $recordRefs) {
+            $batch = array_map(
+                static fn (string $recordRef): array => $sourceRecordsByRef[$recordRef]['ai_data'],
+                $recordRefs,
+            );
+
+            $this->processBatch($batch, $sourceRecordsByRef, $taxonomy);
         }
 
         $this->report();
     }
 
     /**
-     * @param  array<string, mixed>  $record
-     * @param  array<string, mixed>  $taxonomy
+     * @return array<int, string>
      */
-    private function isEligibleForAi(array $record, array $taxonomy): bool
+    protected function csvFiles(): array
     {
-        $googlePlaceId = $record['google_place_id'] ?? null;
-        $address = $record['address_text'] ?? null;
-        $districtNames = $taxonomy['district_names'] ?? [];
+        $files = glob(database_path('hanoi_Z*.csv')) ?: [];
+        sort($files);
 
-        if (! is_string($googlePlaceId) || trim($googlePlaceId) === '' || ! is_string($address)) {
-            return false;
-        }
+        return $files;
+    }
 
-        if (mb_stripos($address, 'hà nội', 0, 'UTF-8') !== false) {
-            return true;
-        }
-
-        foreach ($districtNames as $districtName) {
-            if (is_string($districtName) && mb_stripos($address, $districtName, 0, 'UTF-8') !== false) {
-                return true;
-            }
-        }
-
-        return false;
+    private function resetState(): void
+    {
+        $this->stats = [
+            'rows' => 0,
+            'invalid_rows' => 0,
+            'duplicates' => 0,
+            'batches' => 0,
+            'batch_failures' => 0,
+            'ai_errors' => 0,
+            'imported' => 0,
+            'persistence_failures' => 0,
+        ];
+        $this->duplicates->reset();
     }
 
     /**
      * @param  array<int, array<string, mixed>>  $batch
+     * @param  array<string, array<string, mixed>>  $sourceRecordsByRef
      * @param  array<string, mixed>  $taxonomy
      */
-    private function processBatch(array $batch, array $taxonomy): void
+    private function processBatch(array $batch, array $sourceRecordsByRef, array $taxonomy): void
     {
         $this->stats['batches']++;
 
@@ -125,7 +121,11 @@ class PlaceCsvImportSeeder extends Seeder
         } catch (Throwable $exception) {
             $this->stats['batch_failures']++;
             Log::warning('Place CSV import batch skipped.', [
+                'stage' => $this->failureStage($exception),
+                'reason' => $this->failureReason($exception),
+                'batch_size' => count($batch),
                 'record_refs' => array_column($batch, 'record_ref'),
+                'taxonomy' => $this->taxonomySummary($taxonomy),
                 'exception' => $exception::class,
                 'message' => $exception->getMessage(),
             ]);
@@ -133,27 +133,76 @@ class PlaceCsvImportSeeder extends Seeder
             return;
         }
 
-        foreach ($batch as $record) {
-            $classification = $classifications[$record['record_ref']];
+        foreach ($batch as $aiRecord) {
+            $recordRef = $aiRecord['record_ref'];
+            $classification = $classifications[$recordRef];
 
-            if (! $classification['accepted']) {
-                $this->stats['ai_rejected']++;
+            if ($classification['error']) {
+                $this->stats['ai_errors']++;
+                Log::warning('Place CSV import record rejected.', [
+                    'record_ref' => $recordRef,
+                    'reason' => $classification['error_reason'],
+                ]);
 
                 continue;
             }
 
             try {
-                $this->persistence->import($record, $classification);
+                $place = $this->persistence->import(
+                    $sourceRecordsByRef[$recordRef]['import_data'],
+                    $classification,
+                );
+
+                if ($place === null) {
+                    $this->stats['duplicates']++;
+
+                    continue;
+                }
+
                 $this->stats['imported']++;
             } catch (Throwable $exception) {
                 $this->stats['persistence_failures']++;
                 Log::warning('Place CSV import record failed to persist.', [
-                    'record_ref' => $record['record_ref'],
+                    'record_ref' => $recordRef,
                     'exception' => $exception::class,
                     'message' => $exception->getMessage(),
                 ]);
             }
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $taxonomy
+     * @return array{categories_count: int, districts_count: int, tags_count: int, empty_sections: array<int, string>}
+     */
+    private function taxonomySummary(array $taxonomy): array
+    {
+        $summary = [
+            'categories_count' => count($taxonomy['categories'] ?? []),
+            'districts_count' => count($taxonomy['districts'] ?? []),
+            'tags_count' => count($taxonomy['tags'] ?? []),
+            'empty_sections' => [],
+        ];
+
+        foreach (['categories', 'districts', 'tags'] as $section) {
+            if ($summary[$section.'_count'] === 0) {
+                $summary['empty_sections'][] = $section;
+            }
+        }
+
+        return $summary;
+    }
+
+    private function failureStage(Throwable $exception): string
+    {
+        return str_starts_with($exception->getMessage(), 'ai_') ? 'ai_request_or_parse' : 'validation';
+    }
+
+    private function failureReason(Throwable $exception): string
+    {
+        return str_contains($exception->getMessage(), ':')
+            ? (string) strstr($exception->getMessage(), ':', true)
+            : 'unknown';
     }
 
     private function report(): void

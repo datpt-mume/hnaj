@@ -2,12 +2,13 @@
 
 namespace App\Services\PlaceImport;
 
+use App\Enums\CategoryStatus;
+use App\Enums\DistrictStatus;
 use App\Enums\PlaceStatus;
+use App\Enums\TagStatus;
 use App\Models\Category;
 use App\Models\District;
 use App\Models\Place;
-use App\Models\PlaceImage;
-use App\Models\PlaceOpeningHour;
 use App\Models\Tag;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -15,20 +16,36 @@ use InvalidArgumentException;
 class PlaceImportPersistence
 {
     /**
-     * @param array<string, mixed> $record
-     * @param array<string, mixed> $classification
+     * @param  array<string, mixed>  $record
+     * @param  array<string, mixed>  $classification
      */
-    public function import(array $record, array $classification): Place
+    public function import(array $record, array $classification): ?Place
     {
-        $category = Category::query()->where('slug', $classification['category_slug'])->firstOrFail();
-        $district = District::query()->where('name', $classification['district_name'])->firstOrFail();
-        $tags = Tag::query()->whereIn('slug', $classification['tag_slugs'])->get()->keyBy('slug');
+        return DB::transaction(function () use ($record, $classification): ?Place {
+            if (Place::withTrashed()->where('google_place_id', $record['google_place_id'])->exists()) {
+                return null;
+            }
 
-        if ($tags->count() !== count(array_unique($classification['tag_slugs']))) {
-            throw new InvalidArgumentException('One or more classified tags no longer exist.');
-        }
+            $category = Category::query()
+                ->whereKey($classification['category_id'])
+                ->where('status', CategoryStatus::Active)
+                ->firstOrFail();
+            $district = District::query()
+                ->whereKey($classification['district_id'])
+                ->where('status', DistrictStatus::Active)
+                ->firstOrFail();
+            $tagIds = array_values(array_unique($classification['tag_ids']));
+            $tags = Tag::query()
+                ->whereKey($tagIds)
+                ->where('status', TagStatus::Active)
+                ->whereHas('categories', static fn ($query) => $query->whereKey($category->id))
+                ->get();
 
-        return DB::transaction(function () use ($record, $classification, $category, $district, $tags): Place {
+            if ($tags->count() !== count($tagIds)) {
+                throw new InvalidArgumentException('One or more classified tags are unavailable or incompatible with the category.');
+            }
+
+            [$minPrice, $maxPrice] = $this->price($record['price_range']);
             $place = Place::query()->create([
                 'name' => $record['name'],
                 'address_text' => $record['address_text'],
@@ -40,8 +57,8 @@ class PlaceImportPersistence
                 'category_id' => $category->id,
                 'latitude' => $record['latitude'],
                 'longitude' => $record['longitude'],
-                'min_price' => $this->price($record['price_range'])[0],
-                'max_price' => $this->price($record['price_range'])[1],
+                'min_price' => $minPrice,
+                'max_price' => $maxPrice,
                 'description' => $record['description'],
                 'status' => PlaceStatus::Active,
                 'created_by' => null,
@@ -115,4 +132,3 @@ class PlaceImportPersistence
         return (int) round((float) str_replace(',', '.', $number));
     }
 }
-

@@ -22,22 +22,33 @@ class TaxonomyProvider
             ->get(['id', 'slug', 'name']);
 
         return [
-            'categories' => $categories->mapWithKeys(
-                fn (Category $category): array => [$category->slug => [
+            'categories' => $categories->map(
+                fn (Category $category): array => [
+                    'id' => $category->id,
+                    'slug' => $category->slug,
                     'name' => $category->name,
-                    'allowed_tag_slugs' => $category->tags->pluck('slug')->values()->all(),
-                ]],
-            )->all(),
-            'district_names' => District::query()
+                    'allowed_tag_ids' => $category->tags->pluck('id')->values()->all(),
+                ],
+            )->values()->all(),
+            'districts' => District::query()
                 ->where('status', DistrictStatus::Active)
                 ->orderBy('name')
-                ->pluck('name')
+                ->get(['id', 'name'])
+                ->map(static fn (District $district): array => [
+                    'id' => $district->id,
+                    'name' => $district->name,
+                ])
                 ->values()
                 ->all(),
-            'tag_slugs' => Tag::query()
+            'tags' => Tag::query()
                 ->where('status', TagStatus::Active)
                 ->orderBy('slug')
-                ->pluck('slug')
+                ->get(['id', 'slug', 'name'])
+                ->map(static fn (Tag $tag): array => [
+                    'id' => $tag->id,
+                    'slug' => $tag->slug,
+                    'name' => $tag->name,
+                ])
                 ->values()
                 ->all(),
         ];
