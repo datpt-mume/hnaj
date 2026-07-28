@@ -1,20 +1,13 @@
 services:
   backend:
+    container_name: hnaj-be
     build:
       context: ..
       dockerfile: hnaj-docker/backend/Dockerfile
       target: development
+    working_dir: /var/www/html
     env_file:
-      - .env
-    environment:
-      APP_ENV: local
-      APP_DEBUG: "true"
-      DB_CONNECTION: mysql
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_DATABASE: ${DB_DATABASE:-hnaj}
-      DB_USERNAME: ${DB_USERNAME:-hnaj}
-      DB_PASSWORD: ${DB_PASSWORD:-change-me}
+      - ../hnaj-be/.env
     volumes:
       - ../hnaj-be:/var/www/html
       - backend_vendor:/var/www/html/vendor
@@ -26,10 +19,11 @@ services:
       - hnaj
 
   backend-web:
+    container_name: hnaj-be-web
     image: nginx:1.27-alpine
     volumes:
       - ../hnaj-be:/var/www/html:ro
-      - backend_storage:/var/www/html/storage:ro
+      - ../hnaj-be/storage:/var/www/html/storage:ro
       - ./backend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       backend:
@@ -60,12 +54,7 @@ services:
   mysql:
     image: mysql:8.4
     env_file:
-      - .env
-    environment:
-      MYSQL_DATABASE: ${DB_DATABASE:-hnaj}
-      MYSQL_USER: ${DB_USERNAME:-hnaj}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-change-me}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-change-me-root}
+      - ../hnaj-be/.env
     ports:
       - "127.0.0.1:${MYSQL_PORT:-3306}:3306"
     volumes:
@@ -85,6 +74,5 @@ networks:
 
 volumes:
   backend_vendor:
-  backend_storage:
   frontend_node_modules:
   mysql_data_v2:
