@@ -136,7 +136,7 @@ Là vai trò quản trị toàn hệ thống. Có thể:
 - Duyệt việc cấp tài khoản Sub-admin.
 - Gắn Sub-admin với địa điểm tương ứng.
 - Quản lý place, category, khu vực, mức giá và tags.
-- Quản lý bộ tags phù hợp theo từng category.
+- Quản lý category và bộ tag toàn cục độc lập.
 - Kiểm duyệt ảnh, menu, review, comment và nội dung phản hồi khi cần.
 - Xử lý request quảng bá địa điểm.
 - Cấu hình hoặc can thiệp dữ liệu hiển thị địa điểm hot.
@@ -382,7 +382,7 @@ Các cơ chế hiển thị quảng bá là phạm vi mở rộng sau MVP.
 
 - Mỗi place có đúng **một category**; AI có thể hỗ trợ phân loại place vào một category phù hợp từ danh sách category hợp lệ.
 - Place có thể có nhiều tags.
-- Tag được gán cho place phải thuộc bộ tag hợp lệ của category thông qua `category_tags`.
+- Tag được gán cho place phải thuộc allowlist tag active toàn cục và không phụ thuộc category.
 - Place có thể có giờ mở cửa, mức giá và bộ ảnh tùy loại.
 - Chỉ place có `status = active` xuất hiện trong random và trang công khai; `pending` và `rejected` chỉ thuộc các bảng request.
 
@@ -403,22 +403,9 @@ Các cơ chế hiển thị quảng bá là phạm vi mở rộng sau MVP.
 
 ### 6.2. Category và tag
 
-Ví dụ tags cho quán ăn:
+Bộ tag active cốt lõi gồm: Chill, Yên tĩnh, Sang trọng, Hẹn hò, Đi nhóm, Gia đình, Học sinh — sinh viên, Trẻ em, Chấp nhận pet, Có chỗ đỗ xe, Ngoài trời, Mở khuya, Đồ ăn đường phố, Ăn nhanh, Đồ chay, Đồ ngọt và Bia & nhậu.
 
-- Sang trọng.
-- Học sinh — sinh viên.
-- Ngoài trời.
-- Chấp nhận pet.
-
-Ví dụ tags theo phong cách:
-
-- Cozy.
-- Chill.
-- Hẹn hò.
-- Sôi động.
-- Ngoài trời.
-
-Một place có thể gắn nhiều tags. Mỗi category có thể có bộ tags phù hợp riêng.
+Một place có thể gắn nhiều tags. Category và tag là hai chiều phân loại độc lập; người dùng có thể filter đồng thời theo cả hai. Tag đã ngừng sử dụng được chuyển sang `inactive` để bảo toàn quan hệ `place_tags` lịch sử nhưng không xuất hiện trong lựa chọn mới hoặc prompt AI.
 
 > **TBD:** Tag có đa ngôn ngữ không, có phân cấp/nhóm tag không, User có được đề xuất tag không, và Admin có được đổi tên/xóa tag đã được dùng không.
 
@@ -465,7 +452,6 @@ Một place có thể gắn nhiều tags. Mỗi category có thể có bộ tags
 - `categories`: danh mục địa điểm; mỗi place chỉ tham chiếu một category.
 - `districts`: một danh sách phẳng các quận/huyện/thị xã thuộc Hà Nội.
 - `tags`: tag mô tả.
-- `category_tags`: các tag được phép/khuyến nghị cho category.
 - `place_tags`: quan hệ place — tag.
 - `place_opening_hours`: khung giờ mở cửa theo thứ trong tuần, hỗ trợ nhiều khung giờ mỗi ngày, all-day, closed và qua nửa đêm; ngày thiếu là unknown.
 - `place_images`: quan hệ place — image URL, dùng chung cho thumbnail và bộ ảnh detail.
@@ -639,7 +625,7 @@ Các câu hỏi ưu tiên cao trước đây đã có quyết định và đư�
 1. Bắt buộc đăng nhập để rating, review và comment.
 2. Menu chỉ lưu dưới dạng ảnh do Sub-admin upload; không có bảng menu có cấu trúc.
 3. Chỉ Sub-admin upload ảnh.
-4. Place có đúng một category; tag phải thuộc bộ tag hợp lệ của category.
+4. Place có đúng một category và có thể có nhiều tag độc lập với category.
 5. Khu vực chỉ gồm quận/huyện/thị xã Hà Nội; place vẫn lưu địa chỉ chi tiết và toạ độ.
 6. Khoảng cách dùng GPS, fallback về khu vực đã chọn.
 7. Giờ mở cửa theo thứ trong tuần, nhiều khung giờ, hỗ trợ qua nửa đêm.
@@ -755,7 +741,7 @@ Không còn câu hỏi ưu tiên cao thuộc phạm vi QA vòng 3.
 - Nhóm nhu cầu gồm ăn uống, vui chơi, cafe và các category tương tự.
 - Bộ lọc gồm category, khu vực/quận, mức giá, khoảng cách, giờ mở cửa và tags.
 - Một place có thể có nhiều tags.
-- Tags phải phù hợp với category của place thông qua `category_tags`.
+- Category và tags là các tiêu chí độc lập; tag chỉ cần thuộc allowlist tag active toàn cục.
 - Có ba vai trò: User, Sub-admin/quản lý địa điểm và Admin.
 - Request có trạng thái tối thiểu: pending, approved, rejected.
 - Sub-admin được Admin duyệt và chỉ quản lý place được cấp quyền.
@@ -776,7 +762,7 @@ Không còn câu hỏi ưu tiên cao thuộc phạm vi QA vòng 3.
 Các quyết định nền của vòng QA 2 vẫn được giữ lại, ngoại trừ:
 
 - Ảnh và menu dùng chung một bảng `place_images`; `thumbnail_image_id` trên `places` chọn ảnh chính, các ảnh còn lại hiển thị ở detail.
-- Seed dữ liệu gốc từ nhiều CSV là pipeline nội bộ một lần: dedupe/làm sạch cục bộ trước AI, chỉ gửi record có Google place ID và thuộc Hà Nội, AI phân loại category/tag/quận, rồi import thẳng `active`; không pending/approve và không tạo bảng import lâu dài.
+- Seed dữ liệu gốc từ nhiều CSV là pipeline nội bộ một lần: dedupe/làm sạch cục bộ trước AI, chỉ gửi record có Google place ID và thuộc Hà Nội; không gửi category nguồn từ CSV. AI dùng tên, địa chỉ chi tiết, Google Maps URL, tọa độ, mô tả và thuộc tính để chuẩn hóa địa chỉ, chọn một category hệ thống, các tag toàn cục và quận/huyện/thị xã, rồi import thẳng `active`; không pending/approve và không tạo bảng import lâu dài.
 - Rating, review count, review và status từ Google không được nhập; review/rating chỉ do User HNAJ tạo.
 - Tài khoản Sub-admin chỉ tạo bản ghi `users` sau khi Admin duyệt; không tạo `users` khi gửi đơn.
 

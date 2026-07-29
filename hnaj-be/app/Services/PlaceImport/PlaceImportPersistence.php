@@ -11,7 +11,6 @@ use App\Models\District;
 use App\Models\Place;
 use App\Models\Tag;
 use Illuminate\Support\Facades\DB;
-use InvalidArgumentException;
 
 class PlaceImportPersistence
 {
@@ -38,17 +37,16 @@ class PlaceImportPersistence
             $tags = Tag::query()
                 ->whereKey($tagIds)
                 ->where('status', TagStatus::Active)
-                ->whereHas('categories', static fn ($query) => $query->whereKey($category->id))
                 ->get();
 
             if ($tags->count() !== count($tagIds)) {
-                throw new InvalidArgumentException('One or more classified tags are unavailable or incompatible with the category.');
+                throw new \InvalidArgumentException('One or more classified tags are unavailable.');
             }
 
             [$minPrice, $maxPrice] = $this->price($record['price_range']);
             $place = Place::query()->create([
                 'name' => $record['name'],
-                'address_text' => $record['address_text'],
+                'address_text' => $classification['normalized_address'],
                 'google_place_id' => $record['google_place_id'],
                 'phone' => $record['phone'],
                 'website_url' => $record['website_url'],

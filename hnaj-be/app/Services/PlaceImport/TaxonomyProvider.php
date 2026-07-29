@@ -16,20 +16,18 @@ class TaxonomyProvider
      */
     public function get(): array
     {
-        $categories = Category::query()
-            ->where('status', CategoryStatus::Active)
-            ->with(['tags' => fn ($query) => $query->where('tags.status', TagStatus::Active)])
-            ->get(['id', 'slug', 'name']);
-
         return [
-            'categories' => $categories->map(
-                fn (Category $category): array => [
+            'categories' => Category::query()
+                ->where('status', CategoryStatus::Active)
+                ->orderBy('slug')
+                ->get(['id', 'slug', 'name'])
+                ->map(static fn (Category $category): array => [
                     'id' => $category->id,
                     'slug' => $category->slug,
                     'name' => $category->name,
-                    'allowed_tag_ids' => $category->tags->pluck('id')->values()->all(),
-                ],
-            )->values()->all(),
+                ])
+                ->values()
+                ->all(),
             'districts' => District::query()
                 ->where('status', DistrictStatus::Active)
                 ->orderBy('name')

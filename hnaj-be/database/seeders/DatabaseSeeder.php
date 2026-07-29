@@ -10,7 +10,7 @@ class DatabaseSeeder extends Seeder
     use WithoutModelEvents;
 
     /**
-     * Seed dữ liệu tham chiếu: roles, districts, categories, tags, category_tags.
+     * Seed dữ liệu tham chiếu: roles, districts, categories và tags.
      * Thứ tự gọi theo dependency; mỗi seeder idempotent.
      */
     public function run(): void
@@ -20,7 +20,6 @@ class DatabaseSeeder extends Seeder
             DistrictSeeder::class,
             CategorySeeder::class,
             TagSeeder::class,
-            CategoryTagSeeder::class,
         ]);
     }
 }

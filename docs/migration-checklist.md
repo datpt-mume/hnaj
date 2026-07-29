@@ -1,13 +1,13 @@
 # Migration checklist — HNAJ
 
-- **Trạng thái:** Draft — checklist triển khai, chưa tạo migration/model
-- **Phiên bản:** 0.1
-- **Cập nhật:** 2026-07-25
+- **Trạng thái:** Baseline đã triển khai, dùng để kiểm tra thay đổi migration tiếp theo
+- **Phiên bản:** 0.2
+- **Cập nhật:** 2026-07-28
 - **Nguồn thiết kế:** [`docs/erd.md`](docs/erd.md:1)
 - **Nguồn nghiệp vụ:** [`docs/prd.md`](docs/prd.md:1)
 - **Database mục tiêu:** MySQL 8.4 theo cấu hình Docker hiện tại
 
-> Tài liệu này chỉ lập thứ tự và tiêu chí triển khai migration. Chưa chạy migration, chưa reset database, chưa tạo model và chưa thay đổi schema thực tế.
+> Tài liệu này ghi lại thứ tự, constraint và tiêu chí kiểm chứng migration. Migration xóa `category_tags` được bổ sung ngày 2026-07-28 nhưng chỉ được chạy trên từng môi trường sau khi có phê duyệt vận hành phù hợp.
 
 ## 1. Nguyên tắc triển khai
 
@@ -115,7 +115,7 @@ Danh sách phẳng các quận, huyện và thị xã thuộc Hà Nội; không 
 
 **Rollback:** không xóa dữ liệu district seed dùng chung nếu chưa được duyệt.
 
-### 3.6. Migration 06 — `categories`, `tags`, `category_tags`
+### 3.6. Migration 06 — `categories`, `tags`
 
 #### `categories`
 
@@ -129,14 +129,9 @@ Danh sách phẳng các quận, huyện và thị xã thuộc Hà Nội; không 
 - [ ] Unique `slug` theo policy soft delete đã chọn.
 - [ ] Index `status`.
 
-#### `category_tags`
+Category và tag là hai taxonomy độc lập. Không tạo pivot `category_tags`; filter place có thể kết hợp `category_id` và `place_tags.tag_id` mà không áp ràng buộc tương thích giữa hai taxonomy.
 
-- [ ] `category_id` — FK tới `categories.id`.
-- [ ] `tag_id` — FK tới `tags.id`.
-- [ ] timestamps.
-- [ ] Unique `category_id + tag_id`.
-
-**Rollback:** rollback pivot trước `categories` và `tags`.
+**Rollback:** rollback bảng phụ thuộc trước `categories` và `tags`.
 
 ### 3.7. Migration 07 — `places`
 
@@ -178,7 +173,7 @@ Danh sách phẳng các quận, huyện và thị xã thuộc Hà Nội; không 
 - [ ] timestamps.
 - [ ] Unique `place_id + tag_id`.
 - [ ] Index `place_id`, `tag_id`.
-- [ ] Application kiểm tra `tag_id` tồn tại trong `category_tags` của `places.category_id`.
+- [ ] Application kiểm tra `tag_id` tồn tại và đang active trong allowlist tag toàn cục.
 
 **Rollback:** drop các pivot trước bảng cha.
 
@@ -385,22 +380,21 @@ Danh sách phẳng các quận, huyện và thị xã thuộc Hà Nội; không 
 | 05 | `districts` | Không |
 | 06 | `categories` | Không |
 | 07 | `tags` | Không |
-| 08 | `category_tags` | `categories`, `tags` |
-| 09 | `places` | `users`, `districts`, `categories` |
-| 10 | `place_tags` | `places`, `tags`, `category_tags` (validation application) |
-| 11 | `place_opening_hours` | `places` |
-| 12 | `place_images` | `places`, `users` |
-| 13 | `place_managers` | `places`, `users` |
-| 14 | `bookmarks` | `users`, `places` |
-| 15 | `visit_events` | `users`, `places` |
-| 16 | `anonymous_visit_events` | `places` |
-| 17 | `reviews` | `users`, `places` |
-| 18 | `comments` | `users`, `places`, `comments` |
-| 19 | `place_requests` | `users`, `places`, `categories` |
-| 20 | `manager_applications` | `place_requests`, `users` |
-| 21 | `promotion_requests` | `places`, `users` |
-| 22 | `moderation_actions` | `users` |
-| 23 | `notification_deliveries` | `users` và các notifiable records theo quy ước polymorphic |
+| 08 | `places` | `users`, `districts`, `categories` |
+| 09 | `place_tags` | `places`, `tags` |
+| 10 | `place_opening_hours` | `places` |
+| 11 | `place_images` | `places`, `users` |
+| 12 | `place_managers` | `places`, `users` |
+| 13 | `bookmarks` | `users`, `places` |
+| 14 | `visit_events` | `users`, `places` |
+| 15 | `anonymous_visit_events` | `places` |
+| 16 | `reviews` | `users`, `places` |
+| 17 | `comments` | `users`, `places`, `comments` |
+| 18 | `place_requests` | `users`, `places`, `categories` |
+| 19 | `manager_applications` | `place_requests`, `users` |
+| 20 | `promotion_requests` | `places`, `users` |
+| 21 | `moderation_actions` | `users` |
+| 22 | `notification_deliveries` | `users` và các notifiable records theo quy ước polymorphic |
 
 > Có thể gộp các bảng cùng dependency vào một migration nếu vẫn giữ được `up()`/`down()` rõ ràng; không gộp để che giấu quan hệ hoặc làm rollback khó kiểm soát.
 
@@ -411,11 +405,11 @@ Các quy tắc sau không nên chỉ dựa vào database:
 - [ ] `places.min_price <= places.max_price`.
 - [ ] `places.district_id` thuộc allowlist quận/huyện/thị xã Hà Nội.
 - [ ] `places.category_id` luôn có đúng một category hợp lệ.
-- [ ] Tag phải tồn tại trong `category_tags` của `places.category_id`.
+- [ ] Tag phải tồn tại và active; không kiểm tra quan hệ với category.
 - [ ] Chỉ place `active` mới được random/public; `hidden` không xuất hiện.
 - [ ] Seed record thiếu Google `place_id` hoặc ngoài Hà Nội bị loại trước AI.
 - [ ] Dedupe theo Google `place_id` trước AI; chỉ gửi dữ liệu đã làm sạch và có nghĩa.
-- [ ] AI nhận toàn bộ `address_text` và chỉ trả category/district/tag key trong allowlist.
+- [ ] AI nhận toàn bộ `address_text`, Google Maps URL, tọa độ và dữ liệu mô tả; chỉ trả category/district/tag ID trong allowlist cùng địa chỉ chuẩn hóa.
 - [ ] Google rating, review count, review content và source status không được import.
 - [ ] Seed accepted được import thẳng với `status = active`, `created_by = NULL`, không pending/approval.
 - [ ] Không tạo bảng import lâu dài; log seed nằm ngoài database và chỉ `google_place_id` được giữ làm identity.
@@ -453,11 +447,13 @@ Các quy tắc sau không nên chỉ dựa vào database:
 - [ ] Không lưu place có min price lớn hơn max price.
 - [ ] Không gắn district ngoài allowlist Hà Nội.
 - [ ] Không publish place thiếu `category_id` hợp lệ.
-- [ ] Không gắn tag không thuộc `category_tags` của category trên place.
+- [ ] Chỉ gắn tag active thuộc allowlist tag toàn cục; tag không phụ thuộc category.
 - [ ] Seed loại record thiếu Google `place_id` hoặc ngoài Hà Nội trước AI.
 - [ ] Seed loại duplicate Google `place_id` trước AI và xử lý rerun idempotent.
 - [ ] Seed không nhập Google rating/review/source status.
-- [ ] AI nhận full address text; output sai allowlist được log file ngoài database và không import.
+- [ ] AI nhận full address text, Google Maps URL và tọa độ; output sai allowlist được log file ngoài database và không import.
+- [ ] AI không nhận hoặc sử dụng category nguồn từ CSV; phải chọn một category hệ thống dựa trên dữ liệu place.
+- [ ] Địa chỉ AI chuẩn hóa được validate trước khi lưu; không cho phép địa chỉ rỗng.
 - [ ] Seed accepted được import trực tiếp `active`, không qua pending/approve.
 - [ ] Seed thumbnail lưu `image_url` từ CSV; không tải ảnh vào storage.
 - [ ] Gán thumbnail chỉ khi image thuộc cùng place.

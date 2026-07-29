@@ -95,8 +95,10 @@ class CsvPlaceReader
             'ai_data' => [
                 'record_ref' => $recordRef,
                 'title' => $name,
-                'category' => $this->stringValue($row['category'] ?? null),
-                'address' => $address,
+                'address_text' => $address,
+                'google_maps_url' => $mapsUrl,
+                'latitude' => $latitude,
+                'longitude' => $longitude,
                 'open_hours' => $this->parseJsonValue($row['open_hours'] ?? null),
                 'descriptions' => $this->stringValue($row['descriptions'] ?? null),
                 'about' => $this->parseJsonValue($row['about'] ?? null),

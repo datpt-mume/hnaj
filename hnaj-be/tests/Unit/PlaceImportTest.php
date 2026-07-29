@@ -37,8 +37,10 @@ class PlaceImportTest extends TestCase
         $this->assertSame([
             'record_ref',
             'title',
-            'category',
-            'address',
+            'address_text',
+            'google_maps_url',
+            'latitude',
+            'longitude',
             'open_hours',
             'descriptions',
             'about',
@@ -72,6 +74,7 @@ class PlaceImportTest extends TestCase
                     'record_ref' => 'hanoi_Z001.csv:2',
                     'error' => false,
                     'error_reason' => null,
+                    'normalized_address' => 'Hà Nội',
                     'category_id' => 10,
                     'tag_ids' => [20],
                     'district_id' => 30,
@@ -102,6 +105,7 @@ class PlaceImportTest extends TestCase
                     [
                         'record_ref' => 'record-1',
                         'error' => false,
+                        'normalized_address' => 'Hà Nội',
                         'category_id' => 10,
                         'tag_ids' => [999],
                         'district_id' => 30,
@@ -110,6 +114,7 @@ class PlaceImportTest extends TestCase
                     [
                         'record_ref' => 'record-2',
                         'error' => false,
+                        'normalized_address' => 'Hà Nội',
                         'category_id' => 10,
                         'tag_ids' => [],
                         'district_id' => 30,
@@ -122,6 +127,7 @@ class PlaceImportTest extends TestCase
         $this->assertSame([
             'error' => true,
             'error_reason' => 'unknown_tag',
+            'normalized_address' => null,
             'category_id' => null,
             'tag_ids' => [],
             'district_id' => null,
@@ -147,8 +153,10 @@ class PlaceImportTest extends TestCase
             [[
                 'record_ref' => 'record-1',
                 'title' => 'Cafe',
-                'category' => 'Cà phê',
-                'address' => 'Hà Nội',
+                'address_text' => 'Hà Nội',
+                'google_maps_url' => 'https://maps.example/1',
+                'latitude' => 21.0285,
+                'longitude' => 105.8542,
                 'open_hours' => [],
                 'descriptions' => 'Mô tả',
                 'about' => ['service' => true],
@@ -160,9 +168,12 @@ class PlaceImportTest extends TestCase
         $this->assertStringContainsString('tag_ids', $prompt);
         $this->assertStringContainsString('district_id', $prompt);
         $this->assertStringContainsString('"about"', $prompt);
+        $this->assertStringContainsString('"address_text"', $prompt);
+        $this->assertStringContainsString('"latitude"', $prompt);
+        $this->assertStringContainsString('"longitude"', $prompt);
         $this->assertStringNotContainsString('thumbnail_url', $prompt);
         $this->assertStringNotContainsString('google_place_id', $prompt);
-        $this->assertStringNotContainsString('latitude', $prompt);
+        $this->assertStringNotContainsString('"category"', $prompt);
     }
 
     public function test_price_parser_preserves_thousands_separator(): void
@@ -185,7 +196,6 @@ class PlaceImportTest extends TestCase
                 'id' => 10,
                 'slug' => 'an-uong',
                 'name' => 'Ăn uống',
-                'allowed_tag_ids' => [20],
             ]],
             'districts' => [['id' => 30, 'name' => 'Ba Đình']],
             'tags' => [['id' => 20, 'slug' => 'chill', 'name' => 'Chill']],

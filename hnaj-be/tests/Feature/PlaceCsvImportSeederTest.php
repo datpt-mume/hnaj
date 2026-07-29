@@ -53,6 +53,7 @@ class PlaceCsvImportSeederTest extends TestCase
                     'record_ref' => $record['record_ref'],
                     'error' => false,
                     'error_reason' => null,
+                    'normalized_address' => $record['address_text'],
                     'category_id' => $category->id,
                     'tag_ids' => [$tag->id],
                     'district_id' => $district->id,
@@ -64,6 +65,7 @@ class PlaceCsvImportSeederTest extends TestCase
                         'record_ref' => $record['record_ref'],
                         'error' => true,
                         'error_reason' => 'uncertain_category',
+                        'normalized_address' => null,
                         'category_id' => null,
                         'tag_ids' => [],
                         'district_id' => null,
@@ -107,9 +109,13 @@ class PlaceCsvImportSeederTest extends TestCase
             $prompt = $request->data()['messages'][1]['content'];
 
             return str_contains($prompt, '"about"')
+                && str_contains($prompt, '"address_text"')
+                && str_contains($prompt, '"latitude"')
+                && str_contains($prompt, '"longitude"')
+                && ! str_contains($prompt, '"category"')
                 && ! str_contains($prompt, 'thumbnail_url')
                 && ! str_contains($prompt, 'google_place_id')
-                && ! str_contains($prompt, 'latitude');
+                && ! str_contains($prompt, 'allowed_tag_ids');
         });
     }
 
@@ -138,6 +144,7 @@ class PlaceCsvImportSeederTest extends TestCase
                     'category_id' => $category->id,
                     'tag_ids' => [],
                     'district_id' => $district->id,
+                    'normalized_address' => 'Hà Nội',
                     'opening_hours' => [[
                         'day_of_week' => 2,
                         'schedule_type' => 'not-a-schedule-type',
@@ -173,7 +180,6 @@ class PlaceCsvImportSeederTest extends TestCase
             'slug' => 'chill',
             'status' => TagStatus::Active,
         ]);
-        $category->tags()->attach($tag->id);
 
         return [$category, $district, $tag];
     }

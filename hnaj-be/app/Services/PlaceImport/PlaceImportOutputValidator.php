@@ -60,7 +60,7 @@ class PlaceImportOutputValidator
 
     /**
      * @param  array<string, mixed>  $result
-     * @param  array{categories: array<int, array<int, true>>, districts: array<int, true>, tags: array<int, true>}  $taxonomyIndex
+     * @param  array{categories: array<int, true>, districts: array<int, true>, tags: array<int, true>}  $taxonomyIndex
      * @return array<string, mixed>
      */
     private function validateAcceptedResult(array $result, array $taxonomyIndex): array
@@ -68,8 +68,9 @@ class PlaceImportOutputValidator
         $categoryId = $result['category_id'] ?? null;
         $districtId = $result['district_id'] ?? null;
         $tagIds = $result['tag_ids'] ?? [];
+        $normalizedAddress = $result['normalized_address'] ?? null;
 
-        if (! is_int($categoryId) || ! array_key_exists($categoryId, $taxonomyIndex['categories'])) {
+        if (! is_int($categoryId) || ! isset($taxonomyIndex['categories'][$categoryId])) {
             throw new InvalidArgumentException('unknown_category: AI output contains an unknown category.');
         }
 
@@ -87,15 +88,16 @@ class PlaceImportOutputValidator
             if (! isset($taxonomyIndex['tags'][$tagId])) {
                 throw new InvalidArgumentException('unknown_tag: AI output contains an unknown tag.');
             }
+        }
 
-            if (! isset($taxonomyIndex['categories'][$categoryId][$tagId])) {
-                throw new InvalidArgumentException('incompatible_category_tag: AI output contains a tag incompatible with its category.');
-            }
+        if (! is_string($normalizedAddress) || trim($normalizedAddress) === '') {
+            throw new InvalidArgumentException('invalid_normalized_address: AI output must contain a normalized address.');
         }
 
         return [
             'error' => false,
             'error_reason' => null,
+            'normalized_address' => mb_substr(trim($normalizedAddress), 0, 1000),
             'category_id' => $categoryId,
             'tag_ids' => $tagIds,
             'district_id' => $districtId,
@@ -105,7 +107,7 @@ class PlaceImportOutputValidator
 
     /**
      * @param  array<string, mixed>  $taxonomy
-     * @return array{categories: array<int, array<int, true>>, districts: array<int, true>, tags: array<int, true>}
+     * @return array{categories: array<int, true>, districts: array<int, true>, tags: array<int, true>}
      */
     private function taxonomyIndex(array $taxonomy): array
     {
@@ -120,15 +122,7 @@ class PlaceImportOutputValidator
                 continue;
             }
 
-            $allowedTagIds = [];
-
-            foreach ($category['allowed_tag_ids'] ?? [] as $tagId) {
-                if (is_int($tagId)) {
-                    $allowedTagIds[$tagId] = true;
-                }
-            }
-
-            $index['categories'][$category['id']] = $allowedTagIds;
+            $index['categories'][$category['id']] = true;
         }
 
         foreach ($taxonomy['districts'] ?? [] as $district) {
@@ -154,6 +148,7 @@ class PlaceImportOutputValidator
         return [
             'error' => true,
             'error_reason' => $reason,
+            'normalized_address' => null,
             'category_id' => null,
             'tag_ids' => [],
             'district_id' => null,

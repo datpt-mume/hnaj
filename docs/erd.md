@@ -1,12 +1,12 @@
 # ERD và thiết kế dữ liệu — HNAJ
 
-- **Trạng thái:** Draft — thiết kế để review, chưa phải migration cuối cùng
-- **Phiên bản:** 0.1
-- **Cập nhật:** 2026-07-25
+- **Trạng thái:** Baseline đã triển khai, tiếp tục cập nhật theo thay đổi nghiệp vụ
+- **Phiên bản:** 0.2
+- **Cập nhật:** 2026-07-28
 - **Nguồn nghiệp vụ:** [`docs/prd.md`](docs/prd.md:1)
 - **Database mục tiêu:** MySQL 8.4 theo cấu hình Docker hiện tại
 
-> Tài liệu này mô tả mô hình dữ liệu đầy đủ theo PRD. Chưa tạo migration, model hoặc API implementation. Các bảng và cột có đánh dấu **đề xuất** cần được xác nhận trước khi triển khai.
+> Tài liệu này mô tả mô hình dữ liệu hiện hành theo PRD và migration trong `hnaj-be`. Các mục có đánh dấu **đề xuất** vẫn cần được xác nhận trước khi triển khai thêm.
 
 ## 1. Quy ước thiết kế
 
@@ -27,7 +27,7 @@
 
 - Dữ liệu nghiệp vụ quan trọng không cascade delete tùy tiện.
 - Foreign key giữa các bảng nghiệp vụ dùng hành vi restrict; việc xóa hoặc ẩn bản ghi phải được xử lý ở application.
-- Bảng liên kết thuần túy như `user_roles`, `category_tags`, `place_tags` chỉ được cascade khi bản ghi cha bị xóa cứng và policy cho phép.
+- Bảng liên kết thuần túy như `user_roles` và `place_tags` chỉ được cascade khi bản ghi cha bị xóa cứng và policy cho phép.
 - `places`, `users`, nội dung người dùng và request ưu tiên xóa mềm hoặc đổi trạng thái.
 - Bookmark của place không active được ẩn bằng query trạng thái place, không xóa bản ghi bookmark.
 - Category, tag và district không hỗ trợ xóa trong MVP.
@@ -42,8 +42,6 @@ erDiagram
 
     DISTRICTS ||--o{ PLACES : contains
     CATEGORIES ||--o{ PLACES : classifies
-    CATEGORIES ||--o{ CATEGORY_TAGS : allows
-    TAGS ||--o{ CATEGORY_TAGS : allowed_for
     PLACES ||--o{ PLACE_TAGS : described_by
     TAGS ||--o{ PLACE_TAGS : describes
 
@@ -213,21 +211,9 @@ Tag mô tả place.
 | `created_at`, `updated_at` | DATETIME | Không | Timestamps |
 | `deleted_at` | DATETIME | Có | Xóa mềm nếu cần |
 
-#### `category_tags`
-
-Các tag được phép hoặc khuyến nghị cho category.
-
-| Cột | Kiểu logic | Null | Ràng buộc / ý nghĩa |
-|---|---|---:|---|
-| `category_id` | BIGINT UNSIGNED | Không | FK `categories.id` |
-| `tag_id` | BIGINT UNSIGNED | Không | FK `tags.id` |
-| `created_at`, `updated_at` | DATETIME | Không | Timestamps |
-
-**Unique:** `category_id + tag_id`.
-
 #### `place_tags`
 
-Tag thực tế được gán cho place.
+Tag thực tế được gán cho place. Tag độc lập với category; category và tag là hai chiều phân loại/filter riêng.
 
 | Cột | Kiểu logic | Null | Ràng buộc / ý nghĩa |
 |---|---|---:|---|
@@ -570,7 +556,7 @@ MVP chưa có `promotion_placements`; package, nhãn, vị trí, thời hạn, p
 | Place | `category_id` bắt buộc; status chỉ `active` hoặc `hidden`; `google_place_id` unique nullable |
 | Price | `min_price` và `max_price` không âm, min không lớn hơn max |
 | Area | `district_id` thuộc danh sách quận/huyện/thị xã Hà Nội |
-| Category/tag | `place_tags` không trùng; tag phải có trong `category_tags` của `places.category_id` |
+| Category/tag | `place_tags` không trùng; category và tag độc lập, tag phải active khi được gán mới |
 | Opening hours | `regular`, `all_day`, `closed`; nhiều slot/ngày; hỗ trợ `crosses_midnight`; ngày thiếu là unknown |
 | Images | `thumbnail_image_id` nullable và phải trỏ tới ảnh cùng place; xóa thumbnail thì set null |
 | Bookmark | `user_id + place_id` unique |

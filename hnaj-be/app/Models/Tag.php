@@ -18,21 +18,10 @@ class Tag extends Model
         'status' => TagStatus::class,
     ];
 
-    public function categories(): BelongsToMany
-    {
-        return $this->belongsToMany(Category::class, 'category_tags')
-            ->withTimestamps();
-    }
-
     public function places(): BelongsToMany
     {
         return $this->belongsToMany(Place::class, 'place_tags')
             ->withTimestamps();
-    }
-
-    public function categoryTags(): HasMany
-    {
-        return $this->hasMany(CategoryTag::class);
     }
 
     public function placeTags(): HasMany
