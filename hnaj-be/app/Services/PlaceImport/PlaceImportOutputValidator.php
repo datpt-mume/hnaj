@@ -69,6 +69,8 @@ class PlaceImportOutputValidator
         $districtId = $result['district_id'] ?? null;
         $tagIds = $result['tag_ids'] ?? [];
         $normalizedAddress = $result['normalized_address'] ?? null;
+        $minPriceVnd = $result['min_price_vnd'] ?? null;
+        $maxPriceVnd = $result['max_price_vnd'] ?? null;
 
         if (! is_int($categoryId) || ! isset($taxonomyIndex['categories'][$categoryId])) {
             throw new InvalidArgumentException('unknown_category: AI output contains an unknown category.');
@@ -94,6 +96,8 @@ class PlaceImportOutputValidator
             throw new InvalidArgumentException('invalid_normalized_address: AI output must contain a normalized address.');
         }
 
+        $this->validatePriceRange($minPriceVnd, $maxPriceVnd);
+
         return [
             'error' => false,
             'error_reason' => null,
@@ -101,6 +105,8 @@ class PlaceImportOutputValidator
             'category_id' => $categoryId,
             'tag_ids' => $tagIds,
             'district_id' => $districtId,
+            'min_price_vnd' => $minPriceVnd,
+            'max_price_vnd' => $maxPriceVnd,
             'opening_hours' => $this->normalizeOpeningHours($result['opening_hours'] ?? []),
         ];
     }
@@ -152,8 +158,25 @@ class PlaceImportOutputValidator
             'category_id' => null,
             'tag_ids' => [],
             'district_id' => null,
+            'min_price_vnd' => null,
+            'max_price_vnd' => null,
             'opening_hours' => [],
         ];
+    }
+
+    private function validatePriceRange(mixed $minPriceVnd, mixed $maxPriceVnd): void
+    {
+        if ($minPriceVnd === null && $maxPriceVnd === null) {
+            return;
+        }
+
+        if (! is_int($minPriceVnd) || ! is_int($maxPriceVnd)) {
+            throw new InvalidArgumentException('invalid_price_type: AI price output must contain two integer VND amounts or two null values.');
+        }
+
+        if ($minPriceVnd < 0 || $maxPriceVnd < 0 || $minPriceVnd > $maxPriceVnd) {
+            throw new InvalidArgumentException('invalid_price_range: AI price output contains an invalid VND range.');
+        }
     }
 
     private function errorReason(mixed $reason): string

@@ -198,7 +198,7 @@ Trang chi tiết place dự kiến hiển thị:
 - Địa chỉ chi tiết và quận/huyện/thị xã.
 - Số điện thoại, website URL và Google Maps URL nếu có.
 - Tọa độ hoặc dữ liệu cần thiết để mở Google Maps.
-- Khoảng giá tham khảo bằng VND, gồm `min_price` và `max_price`.
+- Khoảng giá tham khảo bằng VND, gồm `min_price` và `max_price`. Với pipeline CSV, AI nhận chuỗi giá nguồn và trả trực tiếp hai số nguyên VND đã chuẩn hóa; application không tự suy diễn hệ số nghìn bằng parser cục bộ.
 - Khoảng cách tương đối nếu có vị trí người dùng.
 - Tags hợp lệ theo category.
 - Giờ mở cửa.
@@ -632,7 +632,7 @@ Các câu hỏi ưu tiên cao trước đây đã có quyết định và đư�
 8. Chỉ lưu visit event của User; không lưu recommendation/roll event.
 9. Rating cần visit event, mỗi User một rating trên một place.
 10. Rating theo thang 1–5 sao, cho phép nửa sao; User được sửa/xóa nội dung của mình.
-11. Mức giá lưu bằng `min_price`/`max_price` theo VND và lọc bằng range.
+11. Mức giá lưu bằng `min_price`/`max_price` theo số nguyên VND và lọc bằng range. Giá CSV được AI chuẩn hóa; nếu không đủ chắc chắn thì cả hai giá để `null`.
 12. Admin chuẩn hoá dữ liệu trước khi publish place.
 13. Quan hệ Sub-admin — place là nhiều-nhiều.
 14. Không tự động phát hiện trùng; Admin tự xem xét request.

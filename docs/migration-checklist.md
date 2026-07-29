@@ -403,13 +403,14 @@ Category và tag là hai taxonomy độc lập. Không tạo pivot `category_tag
 Các quy tắc sau không nên chỉ dựa vào database:
 
 - [ ] `places.min_price <= places.max_price`.
+- [ ] Với CSV import, AI trả `min_price_vnd`/`max_price_vnd` dạng integer VND hoặc cùng null; application chỉ validate contract và không tự quy đổi đơn vị.
 - [ ] `places.district_id` thuộc allowlist quận/huyện/thị xã Hà Nội.
 - [ ] `places.category_id` luôn có đúng một category hợp lệ.
 - [ ] Tag phải tồn tại và active; không kiểm tra quan hệ với category.
 - [ ] Chỉ place `active` mới được random/public; `hidden` không xuất hiện.
 - [ ] Seed record thiếu Google `place_id` hoặc ngoài Hà Nội bị loại trước AI.
 - [ ] Dedupe theo Google `place_id` trước AI; chỉ gửi dữ liệu đã làm sạch và có nghĩa.
-- [ ] AI nhận toàn bộ `address_text`, Google Maps URL, tọa độ và dữ liệu mô tả; chỉ trả category/district/tag ID trong allowlist cùng địa chỉ chuẩn hóa.
+- [ ] AI nhận toàn bộ `address_text`, Google Maps URL, tọa độ, giá thô và dữ liệu mô tả; chỉ trả category/district/tag ID trong allowlist, địa chỉ chuẩn hóa và khoảng giá số nguyên VND.
 - [ ] Google rating, review count, review content và source status không được import.
 - [ ] Seed accepted được import thẳng với `status = active`, `created_by = NULL`, không pending/approval.
 - [ ] Không tạo bảng import lâu dài; log seed nằm ngoài database và chỉ `google_place_id` được giữ làm identity.
@@ -451,7 +452,7 @@ Các quy tắc sau không nên chỉ dựa vào database:
 - [ ] Seed loại record thiếu Google `place_id` hoặc ngoài Hà Nội trước AI.
 - [ ] Seed loại duplicate Google `place_id` trước AI và xử lý rerun idempotent.
 - [ ] Seed không nhập Google rating/review/source status.
-- [ ] AI nhận full address text, Google Maps URL và tọa độ; output sai allowlist được log file ngoài database và không import.
+- [ ] AI nhận full address text, Google Maps URL, tọa độ và `price_range`; output sai allowlist hoặc sai contract giá được log file ngoài database và không import.
 - [ ] AI không nhận hoặc sử dụng category nguồn từ CSV; phải chọn một category hệ thống dựa trên dữ liệu place.
 - [ ] Địa chỉ AI chuẩn hóa được validate trước khi lưu; không cho phép địa chỉ rỗng.
 - [ ] Seed accepted được import trực tiếp `active`, không qua pending/approve.

@@ -4,7 +4,6 @@ namespace Tests\Unit;
 
 use App\Services\PlaceImport\CsvPlaceReader;
 use App\Services\PlaceImport\PlaceImportOutputValidator;
-use App\Services\PlaceImport\PlaceImportPersistence;
 use App\Services\PlaceImport\PlaceImportPrompt;
 use InvalidArgumentException;
 use Tests\TestCase;
@@ -30,7 +29,6 @@ class PlaceImportTest extends TestCase
             'google_maps_url',
             'latitude',
             'longitude',
-            'price_range',
             'description',
             'thumbnail_url',
         ], array_keys($records[0]['import_data']));
@@ -41,6 +39,7 @@ class PlaceImportTest extends TestCase
             'google_maps_url',
             'latitude',
             'longitude',
+            'price_range',
             'open_hours',
             'descriptions',
             'about',
@@ -78,6 +77,8 @@ class PlaceImportTest extends TestCase
                     'category_id' => 10,
                     'tag_ids' => [20],
                     'district_id' => 30,
+                    'min_price_vnd' => 200000,
+                    'max_price_vnd' => 300000,
                     'opening_hours' => [[
                         'day_of_week' => 8,
                         'schedule_type' => 'regular',
@@ -92,6 +93,8 @@ class PlaceImportTest extends TestCase
             ['day_of_week' => 8, 'schedule_type' => 'regular', 'opens_at' => '18:00', 'closes_at' => '23:59'],
             ['day_of_week' => 2, 'schedule_type' => 'regular', 'opens_at' => '00:00', 'closes_at' => '02:00'],
         ], $result['hanoi_Z001.csv:2']['opening_hours']);
+        $this->assertSame(200000, $result['hanoi_Z001.csv:2']['min_price_vnd']);
+        $this->assertSame(300000, $result['hanoi_Z001.csv:2']['max_price_vnd']);
         $this->assertFalse($result['hanoi_Z001.csv:2']['error']);
     }
 
@@ -109,6 +112,8 @@ class PlaceImportTest extends TestCase
                         'category_id' => 10,
                         'tag_ids' => [999],
                         'district_id' => 30,
+                        'min_price_vnd' => null,
+                        'max_price_vnd' => null,
                         'opening_hours' => [],
                     ],
                     [
@@ -118,6 +123,8 @@ class PlaceImportTest extends TestCase
                         'category_id' => 10,
                         'tag_ids' => [],
                         'district_id' => 30,
+                        'min_price_vnd' => null,
+                        'max_price_vnd' => null,
                         'opening_hours' => [],
                     ],
                 ],
@@ -131,6 +138,8 @@ class PlaceImportTest extends TestCase
             'category_id' => null,
             'tag_ids' => [],
             'district_id' => null,
+            'min_price_vnd' => null,
+            'max_price_vnd' => null,
             'opening_hours' => [],
         ], $result['record-1']);
         $this->assertFalse($result['record-2']['error']);
@@ -157,6 +166,7 @@ class PlaceImportTest extends TestCase
                 'google_maps_url' => 'https://maps.example/1',
                 'latitude' => 21.0285,
                 'longitude' => 105.8542,
+                'price_range' => '200-300 N ₫',
                 'open_hours' => [],
                 'descriptions' => 'Mô tả',
                 'about' => ['service' => true],
@@ -171,19 +181,36 @@ class PlaceImportTest extends TestCase
         $this->assertStringContainsString('"address_text"', $prompt);
         $this->assertStringContainsString('"latitude"', $prompt);
         $this->assertStringContainsString('"longitude"', $prompt);
+        $this->assertStringContainsString('"price_range"', $prompt);
+        $this->assertStringContainsString('min_price_vnd=200000', $prompt);
+        $this->assertStringContainsString('max_price_vnd=300000', $prompt);
         $this->assertStringNotContainsString('thumbnail_url', $prompt);
         $this->assertStringNotContainsString('google_place_id', $prompt);
         $this->assertStringNotContainsString('"category"', $prompt);
     }
 
-    public function test_price_parser_preserves_thousands_separator(): void
+    public function test_validator_rejects_invalid_ai_price_range(): void
     {
-        $persistence = new PlaceImportPersistence;
-        $method = new \ReflectionMethod($persistence, 'price');
-        $method->setAccessible(true);
+        $result = (new PlaceImportOutputValidator)->validate(
+            [['record_ref' => 'record-1']],
+            $this->taxonomy(),
+            [
+                'results' => [[
+                    'record_ref' => 'record-1',
+                    'error' => false,
+                    'normalized_address' => 'Hà Nội',
+                    'category_id' => 10,
+                    'tag_ids' => [],
+                    'district_id' => 30,
+                    'min_price_vnd' => 300000,
+                    'max_price_vnd' => 200000,
+                    'opening_hours' => [],
+                ]],
+            ],
+        );
 
-        $this->assertSame([1, 100000], $method->invoke($persistence, '1-100.000 ₫'));
-        $this->assertSame([200, 300], $method->invoke($persistence, '200-300 N ₫'));
+        $this->assertTrue($result['record-1']['error']);
+        $this->assertSame('invalid_price_range', $result['record-1']['error_reason']);
     }
 
     /**

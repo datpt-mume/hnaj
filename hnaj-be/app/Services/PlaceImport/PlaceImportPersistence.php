@@ -43,7 +43,6 @@ class PlaceImportPersistence
                 throw new \InvalidArgumentException('One or more classified tags are unavailable.');
             }
 
-            [$minPrice, $maxPrice] = $this->price($record['price_range']);
             $place = Place::query()->create([
                 'name' => $record['name'],
                 'address_text' => $classification['normalized_address'],
@@ -55,8 +54,8 @@ class PlaceImportPersistence
                 'category_id' => $category->id,
                 'latitude' => $record['latitude'],
                 'longitude' => $record['longitude'],
-                'min_price' => $minPrice,
-                'max_price' => $maxPrice,
+                'min_price' => $classification['min_price_vnd'],
+                'max_price' => $classification['max_price_vnd'],
                 'description' => $record['description'],
                 'status' => PlaceStatus::Active,
                 'created_by' => null,
@@ -86,47 +85,5 @@ class PlaceImportPersistence
 
             return $place;
         });
-    }
-
-    /**
-     * @return array{0: int|null, 1: int|null}
-     */
-    private function price(?string $value): array
-    {
-        if ($value === null || trim($value) === '') {
-            return [null, null];
-        }
-
-        preg_match_all('/\d[\d.,]*/', $value, $matches);
-        $numbers = array_map(
-            fn (string $number): int => $this->parsePriceNumber($number),
-            $matches[0],
-        );
-        $numbers = array_values(array_filter($numbers, static fn (int $number): bool => $number >= 0));
-
-        if ($numbers === []) {
-            return [null, null];
-        }
-
-        if (count($numbers) === 1) {
-            return [$numbers[0], $numbers[0]];
-        }
-
-        return [min($numbers), max($numbers)];
-    }
-
-    private function parsePriceNumber(string $number): int
-    {
-        $number = trim($number);
-
-        if (preg_match('/^\d{1,3}(?:\.\d{3})+$/', $number) === 1) {
-            return (int) str_replace('.', '', $number);
-        }
-
-        if (preg_match('/^\d{1,3}(?:,\d{3})+$/', $number) === 1) {
-            return (int) str_replace(',', '', $number);
-        }
-
-        return (int) round((float) str_replace(',', '.', $number));
     }
 }

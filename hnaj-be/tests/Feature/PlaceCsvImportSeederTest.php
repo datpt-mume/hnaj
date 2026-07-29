@@ -57,6 +57,8 @@ class PlaceCsvImportSeederTest extends TestCase
                     'category_id' => $category->id,
                     'tag_ids' => [$tag->id],
                     'district_id' => $district->id,
+                    'min_price_vnd' => 50000,
+                    'max_price_vnd' => 100000,
                     'opening_hours' => [],
                 ];
 
@@ -69,6 +71,8 @@ class PlaceCsvImportSeederTest extends TestCase
                         'category_id' => null,
                         'tag_ids' => [],
                         'district_id' => null,
+                        'min_price_vnd' => null,
+                        'max_price_vnd' => null,
                         'opening_hours' => [],
                     ];
                 } elseif ($number === 2) {
@@ -97,6 +101,11 @@ class PlaceCsvImportSeederTest extends TestCase
         $this->assertDatabaseMissing('places', ['google_place_id' => 'google-1']);
         $this->assertDatabaseMissing('places', ['google_place_id' => 'google-2']);
         $this->assertDatabaseHas('places', ['google_place_id' => 'google-3']);
+        $this->assertDatabaseHas('places', [
+            'google_place_id' => 'google-3',
+            'min_price' => 50000,
+            'max_price' => 100000,
+        ]);
         $this->assertSame(10, Place::query()->whereIn('google_place_id', array_map(
             static fn (int $number): string => 'google-'.$number,
             range(1, 12),
@@ -112,6 +121,8 @@ class PlaceCsvImportSeederTest extends TestCase
                 && str_contains($prompt, '"address_text"')
                 && str_contains($prompt, '"latitude"')
                 && str_contains($prompt, '"longitude"')
+                && str_contains($prompt, '"price_range"')
+                && str_contains($prompt, 'min_price_vnd=200000')
                 && ! str_contains($prompt, '"category"')
                 && ! str_contains($prompt, 'thumbnail_url')
                 && ! str_contains($prompt, 'google_place_id')
@@ -145,6 +156,8 @@ class PlaceCsvImportSeederTest extends TestCase
                     'tag_ids' => [],
                     'district_id' => $district->id,
                     'normalized_address' => 'Hà Nội',
+                    'min_price_vnd' => null,
+                    'max_price_vnd' => null,
                     'opening_hours' => [[
                         'day_of_week' => 2,
                         'schedule_type' => 'not-a-schedule-type',

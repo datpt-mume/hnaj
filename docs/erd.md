@@ -172,8 +172,8 @@ Danh sách phẳng các quận, huyện và thị xã thuộc địa giới hàn
 | `category_id` | BIGINT UNSIGNED | Không | FK `categories.id`; đúng một category |
 | `latitude` | DECIMAL(10,7) | Không | Tọa độ chuẩn hóa |
 | `longitude` | DECIMAL(10,7) | Không | Tọa độ chuẩn hóa |
-| `min_price` | UNSIGNED BIGINT | Có | Giá thấp nhất VND |
-| `max_price` | UNSIGNED BIGINT | Có | Giá cao nhất VND |
+| `min_price` | UNSIGNED BIGINT | Có | Giá thấp nhất theo số nguyên VND; CSV import dùng trực tiếp giá AI đã chuẩn hóa |
+| `max_price` | UNSIGNED BIGINT | Có | Giá cao nhất theo số nguyên VND; CSV import dùng trực tiếp giá AI đã chuẩn hóa |
 | `description` | TEXT | Có | Mô tả |
 | `thumbnail_image_id` | BIGINT UNSIGNED | Có | FK `place_images.id`; ảnh chính dùng cho card random |
 | `status` | VARCHAR | Không | Chỉ `active` hoặc `hidden` |
@@ -554,7 +554,7 @@ MVP chưa có `promotion_placements`; package, nhãn, vị trí, thời hạn, p
 | User | `users.email` unique; password chỉ nằm ở `users` |
 | Role | `user_roles.user_id + role_id` unique |
 | Place | `category_id` bắt buộc; status chỉ `active` hoặc `hidden`; `google_place_id` unique nullable |
-| Price | `min_price` và `max_price` không âm, min không lớn hơn max |
+| Price | `min_price` và `max_price` cùng null hoặc cùng là số nguyên VND không âm; min không lớn hơn max |
 | Area | `district_id` thuộc danh sách quận/huyện/thị xã Hà Nội |
 | Category/tag | `place_tags` không trùng; category và tag độc lập, tag phải active khi được gán mới |
 | Opening hours | `regular`, `all_day`, `closed`; nhiều slot/ngày; hỗ trợ `crosses_midnight`; ngày thiếu là unknown |
