@@ -3,7 +3,7 @@
 - **Trạng thái:** Draft — đã chốt nghiệp vụ nền và các quyết định QA vòng 3, còn mở một số chính sách mở rộng
 - **Phiên bản:** 0.3
 - **Ngày soạn:** 2026-07-24
-- **Cập nhật:** 2026-07-25 (QA vòng 3)
+- **Cập nhật:** 2026-07-29 (authentication)
 - **Ngôn ngữ:** Tiếng Việt
 - **Phạm vi tài liệu:** Mô tả sản phẩm, nghiệp vụ, dữ liệu và yêu cầu chức năng ở mức định hướng. Tài liệu này chưa phải thiết kế database, API specification hoặc technical design.
 
@@ -68,6 +68,15 @@ Các nội dung sau chưa được xem là mục tiêu bắt buộc cho phiên b
 - Hệ thống thanh toán quảng cáo tự động.
 
 ## 4. Đối tượng sử dụng và vai trò
+
+### 4.0. Authentication đã chốt
+
+- User đăng ký bằng `username`, họ tên đầy đủ, email và password; chỉ hoàn tất đăng ký sau khi xác thực email.
+- User đăng nhập bằng `username + password` hoặc Google OAuth. Google account mới tự sinh username dạng `{local-part}_{mã-ngẫu-nhiên}` để tránh trùng lặp và nhận role `user`.
+- Admin đăng nhập bằng endpoint riêng với `username + password`; credential được tạo thủ công qua Tinker, không seed trong source code. Hành động bootstrap admin là one-time create-only: chỉ chạy một lần để tạo admin hệ thống đầu tiên, từ chối mọi lần chạy sau và không cập nhật tài khoản hiện có.
+- Role hệ thống giữ nguyên `user`, `sub_admin`, `admin`. Backend kiểm tra role từ database cho từng khu vực và kiểm tra lại role trước khi phát Google token; endpoint user không thay thế endpoint admin.
+- API dùng Sanctum bearer token. Google callback chỉ redirect exchange code một lần, không đưa bearer token vào URL. Callback Google không hợp lệ redirect về frontend với lỗi chung thay vì trả JSON cho trình duyệt.
+- Chi tiết contract nằm tại [`docs/api-auth.md`](api-auth.md).
 
 ### 4.1. Khách chưa đăng nhập
 
@@ -602,7 +611,7 @@ Các thực thể trên cần được kiểm tra lại trước khi tạo migra
 
 API phải tuân theo envelope chung đã mô tả trong [`docs/api-response-contract.md`](docs/api-response-contract.md:1). Danh sách dưới đây chỉ là nhóm endpoint cần xem xét, chưa phải contract đã duyệt:
 
-- Authentication: đăng ký, đăng nhập, đăng xuất, refresh/reset password.
+- Authentication: contract đăng ký, xác thực email, đăng nhập user/admin, đăng xuất và Google OAuth đã chốt tại [`docs/api-auth.md`](api-auth.md); refresh/reset password chưa thuộc phạm vi hiện tại.
 - Places: danh sách, chi tiết, tìm kiếm/lọc, random.
 - Categories, areas, tags.
 - Bookmarks: tạo, xóa, danh sách của tôi.
@@ -653,7 +662,7 @@ Không còn câu hỏi ưu tiên cao thuộc phạm vi QA vòng 3.
 1. Có báo cáo nội dung, block user và chống spam không.
 2. User có được đề xuất tag mới không; Admin đổi tên hoặc xóa tag đã dùng thì xử lý thế nào.
 3. Có hỗ trợ đa ngôn ngữ không.
-4. Chính sách email verification và các luồng xác thực tài khoản thông thường.
+4. Chính sách reset/forgot password và vòng đời token dài hạn; email verification và login hiện đã chốt.
 6. Cơ chế mở rộng quảng bá sau MVP: nhãn, vị trí, thời hạn, package, phí và thanh toán.
 
 ## 13. Tiêu chí nghiệm thu nghiệp vụ sơ bộ

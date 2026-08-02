@@ -1,0 +1,9 @@
+{
+  "date": "2026-07-29",
+  "framework": "React 19 + Vite 8",
+  "font_stack": "Existing Inter stack replaced by a project-local system pair because no font package is installed",
+  "palette": "Existing green direction preserved and converted to OKLCH semantic tokens",
+  "motion": "Motion-cut project; CSS feedback transitions only",
+  "spacing": "4-point-derived semantic scale",
+  "preserved_assets": ["hnaj-fe/src/assets/hero.png"]
+}

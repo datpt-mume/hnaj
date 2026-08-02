@@ -2,24 +2,44 @@
 
 namespace App\Models;
 
+use App\Enums\RoleName;
 use App\Enums\UserStatus;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password', 'status'])]
-#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
+
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'name',
+        'username',
+        'email',
+        'password',
+        'status',
+        'google_id',
+        'avatar_url',
+    ];
+
+    /**
+     * @var list<string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+        'google_id',
+    ];
 
     /**
      * Get the attributes that should be cast.
@@ -33,6 +53,44 @@ class User extends Authenticatable
             'password' => 'hashed',
             'status' => UserStatus::class,
         ];
+    }
+
+    /**
+     * Kiểm tra role trên relation đã load để tránh truy vấn lặp trong middleware.
+     */
+    public function hasRole(RoleName $role): bool
+    {
+        return $this->roles
+            ->contains(fn (Role $assigned): bool => $assigned->name === $role->value);
+    }
+
+    public function hasAnyRole(RoleName ...$roles): bool
+    {
+        foreach ($roles as $role) {
+            if ($this->hasRole($role)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function roleNames(): array
+    {
+        return $this->roles->pluck('name')->all();
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === UserStatus::Active;
+    }
+
+    public function hasVerifiedEmailAddress(): bool
+    {
+        return $this->email_verified_at !== null;
     }
 
     public function roles(): BelongsToMany
@@ -50,6 +108,11 @@ class User extends Authenticatable
     public function accountSetupTokens(): HasMany
     {
         return $this->hasMany(AccountSetupToken::class);
+    }
+
+    public function emailVerificationTokens(): HasMany
+    {
+        return $this->hasMany(EmailVerificationToken::class);
     }
 
     public function createdPlaces(): HasMany

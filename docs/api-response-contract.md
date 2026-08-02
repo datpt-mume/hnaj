@@ -30,6 +30,8 @@ Tất cả endpoint dưới tiền tố `/api` phải trả về một trong hai
 
 Các lỗi validation trả về HTTP `422` với code `VALIDATION_ERROR`; resource không tồn tại trả về HTTP `404` với code `NOT_FOUND`; lỗi không mong đợi trả về HTTP `500` với code `INTERNAL_SERVER_ERROR`.
 
+Contract authentication, role và các mã lỗi ổn định được mô tả tại [`docs/api-auth.md`](api-auth.md).
+
 ## API test
 
 `GET /api/test` xác nhận kết nối giữa frontend và backend.

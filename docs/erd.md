@@ -1,8 +1,8 @@
 # ERD và thiết kế dữ liệu — HNAJ
 
 - **Trạng thái:** Baseline đã triển khai, tiếp tục cập nhật theo thay đổi nghiệp vụ
-- **Phiên bản:** 0.2
-- **Cập nhật:** 2026-07-28
+- **Phiên bản:** 0.3
+- **Cập nhật:** 2026-07-29
 - **Nguồn nghiệp vụ:** [`docs/prd.md`](docs/prd.md:1)
 - **Database mục tiêu:** MySQL 8.4 theo cấu hình Docker hiện tại
 
@@ -39,6 +39,7 @@
 erDiagram
     USERS ||--o{ USER_ROLES : has
     ROLES ||--o{ USER_ROLES : grants
+    USERS ||--o{ EMAIL_VERIFICATION_TOKENS : verifies_with
 
     DISTRICTS ||--o{ PLACES : contains
     CATEGORIES ||--o{ PLACES : classifies
@@ -90,11 +91,14 @@ Tài khoản đã tồn tại và có thể đăng nhập. Không tạo bản gh
 | Cột | Kiểu logic | Null | Ràng buộc / ý nghĩa |
 |---|---|---:|---|
 | `id` | BIGINT UNSIGNED | Không | PK |
-| `name` | VARCHAR | Không | Tên hiển thị |
-| `email` | VARCHAR | Không | UNIQUE, dùng đăng nhập |
+| `name` | VARCHAR | Không | Họ tên/tên hiển thị (`full_name` ở API) |
+| `username` | VARCHAR(50) | Không | UNIQUE, định danh đăng nhập bằng password |
+| `email` | VARCHAR | Không | UNIQUE, dùng xác thực email và liên kết Google; không dùng làm identifier của password login |
 | `password` | VARCHAR | Không | Password hash; chỉ xuất hiện ở đây |
 | `status` | VARCHAR | Không | `active`, `suspended`, `disabled`; application dùng constants hoặc PHP backed enum |
 | `email_verified_at` | DATETIME | Có | Thời điểm xác thực email |
+| `google_id` | VARCHAR(64) | Có | UNIQUE nullable; Google subject identifier |
+| `avatar_url` | VARCHAR | Có | Avatar từ Google nếu có |
 | `remember_token` | VARCHAR | Có | Theo cơ chế Laravel nếu dùng |
 | `created_at`, `updated_at` | DATETIME | Không | Timestamps |
 | `deleted_at` | DATETIME | Có | Xóa mềm nếu áp dụng |
@@ -123,6 +127,21 @@ Pivot cho phép một tài khoản có nhiều role.
 | `created_at`, `updated_at` | DATETIME | Không | Timestamps |
 
 **Unique:** `user_id + role_id`.
+
+#### `email_verification_tokens`
+
+Token một lần để user thường xác thực email và hoàn tất đăng ký.
+
+| Cột | Kiểu logic | Null | Ràng buộc / ý nghĩa |
+|---|---|---:|---|
+| `id` | BIGINT UNSIGNED | Không | PK |
+| `user_id` | BIGINT UNSIGNED | Không | FK `users.id`, restrict delete |
+| `token_hash` | VARCHAR | Không | UNIQUE; SHA-256 hash, không lưu token plaintext |
+| `expires_at` | DATETIME | Không | Hạn dùng; application đặt 24 giờ |
+| `used_at` | DATETIME | Có | Thời điểm đã dùng hoặc bị vô hiệu hóa |
+| `created_at` | DATETIME | Không | Thời điểm phát hành |
+
+**Index:** `user_id`, `expires_at`; token mới vô hiệu hóa token chưa dùng trước đó.
 
 #### `account_setup_tokens`
 

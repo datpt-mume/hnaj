@@ -1,9 +1,13 @@
 <?php
 
+use App\Enums\AuthErrorCode;
+use App\Exceptions\AuthFlowException;
+use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -17,7 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'role' => EnsureUserHasRole::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
@@ -27,6 +33,22 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (Throwable $exception, Request $request) {
             if (! $request->is('api/*')) {
                 return null;
+            }
+
+            if ($exception instanceof AuthFlowException) {
+                return ApiResponse::error(
+                    message: $exception->getMessage(),
+                    code: $exception->errorCode->value,
+                    status: $exception->status,
+                );
+            }
+
+            if ($exception instanceof AuthenticationException) {
+                return ApiResponse::error(
+                    message: 'Authentication is required to access this resource.',
+                    code: AuthErrorCode::Unauthenticated->value,
+                    status: 401,
+                );
             }
 
             if ($exception instanceof ValidationException) {

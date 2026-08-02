@@ -1,8 +1,8 @@
 # Migration checklist — HNAJ
 
 - **Trạng thái:** Baseline đã triển khai, dùng để kiểm tra thay đổi migration tiếp theo
-- **Phiên bản:** 0.2
-- **Cập nhật:** 2026-07-28
+- **Phiên bản:** 0.3
+- **Cập nhật:** 2026-07-29
 - **Nguồn thiết kế:** [`docs/erd.md`](docs/erd.md:1)
 - **Nguồn nghiệp vụ:** [`docs/prd.md`](docs/prd.md:1)
 - **Database mục tiêu:** MySQL 8.4 theo cấu hình Docker hiện tại
@@ -45,9 +45,18 @@ Tên file migration thực tế sẽ dùng timestamp Laravel tại thời điể
 - [ ] Giữ `email_verified_at` nếu luồng xác thực email sử dụng.
 - [ ] Cân nhắc `deleted_at` theo policy account đã chốt; nếu dùng phải kiểm tra tác động tới unique email và authentication.
 - [ ] Bảo đảm `email` có unique index theo ERD.
+- [x] Bổ sung `username` unique, non-null; backfill user cũ từ local-part email và thêm hậu tố khi trùng trước khi áp constraint.
+- [x] Bổ sung `google_id` unique nullable và `avatar_url` nullable cho Google OAuth.
 - [ ] Không thêm password vào bất kỳ application/request table nào.
 
 **Rollback:** chỉ rollback các cột được migration này thêm; không xóa bảng `users` mặc định nếu migration đó đã tồn tại ở môi trường chia sẻ.
+
+### 3.1.1. Migration auth bổ sung
+
+- [x] Tạo `email_verification_tokens` với `token_hash` unique, `expires_at`, `used_at` và FK restrict tới `users`.
+- [x] Tạo `personal_access_tokens` theo migration của Laravel Sanctum.
+- [x] Không seed admin credential; admin được tạo qua Tinker bằng `CreateAdminAccount`.
+- [ ] Trước rollout môi trường chia sẻ, kiểm tra dữ liệu email cũ có thể sinh username hợp lệ và dung lượng index theo MySQL thực tế.
 
 ### 3.2. Migration 02 — `roles`
 
@@ -481,6 +490,10 @@ Các quy tắc sau không nên chỉ dựa vào database:
 - [ ] Không trả secret, password hoặc token plaintext trong API/log.
 - [ ] `target_type` moderation không chấp nhận giá trị ngoài mapping cố định.
 - [ ] Authorization được kiểm tra ở backend, không dựa vào frontend guard.
+- [x] Password login dùng `username`, không dùng email.
+- [x] User chưa verify email không nhận access token.
+- [x] Endpoint user và admin kiểm tra role tách biệt.
+- [x] Google OAuth dùng `state` và exchange code một lần; bearer token không đi qua redirect URL.
 
 ## 7. Rollback và vận hành an toàn
 
@@ -507,9 +520,8 @@ Chỉ chuyển sang Code mode khi tất cả điều kiện sau được duyệt
 
 ## 9. Phạm vi chưa triển khai
 
-- Chưa tạo migration.
-- Chưa tạo model, relation, cast, factory hoặc seeder.
-- Chưa chạy `migrate` hoặc rollback trên database.
-- Chưa thay đổi API, route, service, controller, frontend hoặc Docker.
-- Chưa triển khai email provider, queue worker hoặc account setup endpoint.
+- Baseline domain migration đã tồn tại; authentication bổ sung migration username/Google, email verification token và Sanctum token.
+- Chưa kiểm chứng rollback auth migration trên môi trường có dữ liệu chia sẻ.
+- Chưa cấu hình email provider production; môi trường phải cung cấp mail transport thực tế.
+- Chưa triển khai forgot/reset password và account setup endpoint cho Sub-admin.
 - Chưa triển khai promotion placement, payment, package, label, position hoặc scheduling.

@@ -1,0 +1,74 @@
+/* Hallmark tokens: Split Studio, modern-minimal, calm local tone, leaf-green anchor. */
+:root {
+  --color-paper: oklch(97.5% 0.012 145);
+  --color-paper-2: oklch(94.5% 0.018 145);
+  --color-surface: oklch(99% 0.006 145);
+  --color-surface-raised: oklch(100% 0 0);
+  --color-ink: oklch(22% 0.025 145);
+  --color-ink-soft: oklch(39% 0.025 145);
+  --color-muted: oklch(47% 0.022 145);
+  --color-rule: oklch(86% 0.022 145);
+  --color-rule-strong: oklch(72% 0.035 145);
+  --color-accent: oklch(43% 0.105 154);
+  --color-accent-hover: oklch(37% 0.095 154);
+  --color-accent-soft: oklch(92% 0.045 150);
+  --color-accent-ink: oklch(98% 0.008 145);
+  --color-focus: oklch(58% 0.14 150);
+  --color-error: oklch(48% 0.16 28);
+  --color-error-soft: oklch(94% 0.035 28);
+  --color-shadow: oklch(25% 0.04 145 / 0.13);
+  --color-overlay: oklch(18% 0.03 145 / 0.08);
+  --font-display: "Trebuchet MS", "Aptos Display", sans-serif;
+  --font-body: "Aptos", "Segoe UI", sans-serif;
+  --font-mono: "Cascadia Mono", "SFMono-Regular", monospace;
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.25rem;
+  --text-lg: 1.5625rem;
+  --text-xl: 1.953rem;
+  --text-2xl: 2.441rem;
+  --text-display: clamp(2.65rem, 5vw + 0.5rem, 4.8rem);
+  --radius-control: 0.75rem;
+  --radius-card: 1.25rem;
+  --radius-pill: 999px;
+  --rule-thin: 1px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-long: 420ms;
+  --shadow-card: 0 1.25rem 4rem var(--color-shadow);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-paper: oklch(15% 0.018 145);
+    --color-paper-2: oklch(19% 0.022 145);
+    --color-surface: oklch(18% 0.018 145);
+    --color-surface-raised: oklch(22% 0.02 145);
+    --color-ink: oklch(94% 0.012 145);
+    --color-ink-soft: oklch(81% 0.018 145);
+    --color-muted: oklch(72% 0.018 145);
+    --color-rule: oklch(31% 0.025 145);
+    --color-rule-strong: oklch(46% 0.04 145);
+    --color-accent: oklch(70% 0.12 150);
+    --color-accent-hover: oklch(76% 0.11 150);
+    --color-accent-soft: oklch(27% 0.055 150);
+    --color-accent-ink: oklch(16% 0.025 150);
+    --color-focus: oklch(76% 0.12 150);
+    --color-error: oklch(73% 0.14 28);
+    --color-error-soft: oklch(25% 0.055 28);
+    --color-shadow: oklch(5% 0.01 145 / 0.42);
+    --color-overlay: oklch(5% 0.01 145 / 0.22);
+  }
+}

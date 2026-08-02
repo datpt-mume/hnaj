@@ -35,6 +35,12 @@ return [
         ],
     ],
 
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect_uri' => env('GOOGLE_REDIRECT_URI'),
+    ],
+
     'place_import_ai' => [
         'base_url' => env('PLACE_IMPORT_AI_BASE_URL'),
         'api_key' => env('PLACE_IMPORT_AI_API_KEY'),
