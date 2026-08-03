@@ -75,6 +75,22 @@ Trước tiên phải đọc manifest, lockfile, config, script và tài liệu 
 
 Giữ nguyên package manager và lockfile đang dùng. Không trộn nhiều package manager hoặc tự tái tạo lockfile bằng công cụ khác.
 
+### 3.1. Bắt buộc chạy kiểm chứng trong Docker
+
+- Mọi lệnh test, lint, build, format, migrate, Artisan hoặc kiểm tra runtime phải chạy trong container Docker Compose, không chạy trực tiếp `npm`, `node`, `php`, `composer` hoặc binary tương ứng trên terminal host.
+- Luôn chạy Compose từ thư mục `hnaj-docker/`, dùng file env của Compose và đúng tên service trong `hnaj-docker/compose.yaml`:
+
+```bash
+cd hnaj-docker
+docker compose --env-file .env exec backend php artisan test
+docker compose --env-file .env exec frontend npm run lint
+docker compose --env-file .env exec frontend npm run build
+```
+
+- Trước khi chạy lệnh `exec`, kiểm tra container cần thiết đang hoạt động bằng `docker compose --env-file .env ps`. Nếu chưa chạy, khởi động bằng `docker compose --env-file .env up -d`.
+- Không tự đổi service `frontend` thành `fe`, không chạy lệnh từ workspace root nếu lệnh phụ thuộc `package.json` hoặc `composer.json`, và không dùng dependency cài trên host để thay thế môi trường container.
+- Chỉ chạy lệnh trực tiếp trên host khi đó là thao tác Git, đọc/ghi file, kiểm tra công cụ Docker hoặc khi người dùng cho phép rõ ràng; phải nêu giới hạn môi trường nếu không thể chạy trong container.
+
 ## 4. Ngôn ngữ và cách giao tiếp
 
 - Trao đổi với người dùng bằng tiếng Việt.
@@ -127,7 +143,7 @@ Không được coi việc người dùng mô tả task là phê duyệt mặc �
 Sau khi triển khai:
 
 1. Rà soát diff để phát hiện file ngoài phạm vi, secret, debug code và thay đổi vô tình.
-2. Chạy test/lint/format/build liên quan bằng script thực tế của repository.
+2. Chạy test/lint/format/build liên quan bằng script thực tế của repository trong Docker Compose theo mục 3.1.
 3. Với thay đổi xuyên lớp, kiểm tra contract từ route/backend đến service/frontend và môi trường Docker.
 4. Không tuyên bố thành công nếu chưa kiểm chứng.
 5. Nếu không thể chạy một bước, báo rõ lệnh/bước chưa chạy, lý do và rủi ro còn lại.
@@ -354,7 +370,7 @@ Một task chỉ được xem là hoàn thành khi:
 - API, frontend consumer và tài liệu contract được đồng bộ khi liên quan.
 - Validation, authorization, error handling và edge case phù hợp đã được xem xét.
 - Test cần thiết đã được thêm/cập nhật.
-- Test, lint, format và build liên quan đã chạy theo script thực tế và đạt, hoặc giới hạn đã được báo rõ.
+- Test, lint, format và build liên quan đã chạy theo script thực tế trong Docker Compose và đạt, hoặc giới hạn đã được báo rõ.
 - Docker config/bootstrap được kiểm tra khi thay đổi ảnh hưởng runtime.
 - Không còn debug code, secret, file ngoài phạm vi hoặc thay đổi vô tình.
 - Diff cuối cùng đã được rà soát.
@@ -412,6 +428,6 @@ Ví dụ loại commit có thể dùng khi phù hợp: `feat`, `fix`, `refactor`
 - [ ] Không có secret, debug code hoặc file sinh ra ngoài ý muốn.
 - [ ] Backend, frontend, API docs và Docker đã đồng bộ khi liên quan.
 - [ ] Regression test/feature test đã được bổ sung khi cần.
-- [ ] Test, lint, format và build liên quan đã chạy theo script thật.
+- [ ] Test, lint, format và build liên quan đã chạy theo script thật trong Docker Compose.
 - [ ] Mọi bước chưa chạy và rủi ro còn lại đã được báo rõ.
 - [ ] Agent không tự commit hoặc push.

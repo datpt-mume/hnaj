@@ -1,6 +1,6 @@
 /* Hallmark tokens: Split Studio, modern-minimal, calm local tone, leaf-green anchor. */
 :root {
-  --color-paper: oklch(97.5% 0.012 145);
+  --color-paper: rgb(239, 220, 188);
   --color-paper-2: oklch(94.5% 0.018 145);
   --color-surface: oklch(99% 0.006 145);
   --color-surface-raised: oklch(100% 0 0);
