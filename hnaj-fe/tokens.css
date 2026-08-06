@@ -1,4 +1,5 @@
 /* Hallmark tokens: Split Studio, modern-minimal, calm local tone, leaf-green anchor. */
+/* Discovery/food layer (Phase 0): warm cream/ink-warm/teal/flame/sun tokens. */
 :root {
   --color-paper: rgb(239, 220, 188);
   --color-paper-2: oklch(94.5% 0.018 145);
@@ -18,6 +19,16 @@
   --color-error-soft: oklch(94% 0.035 28);
   --color-shadow: oklch(25% 0.04 145 / 0.13);
   --color-overlay: oklch(18% 0.03 145 / 0.08);
+  /* Warm discovery palette (replaces hard-coded hex in App.css) */
+  --color-cream: #fff7e0;
+  --color-cream-soft: #f7e5b8;
+  --color-ink-warm: #3e2d21;
+  --color-teal: #26786d;
+  --color-teal-deep: #075b56;
+  --color-flame: #d34c22;
+  --color-flame-hover: #b93e1b;
+  --color-sun: #f4c928;
+  --color-on-warm: #fff; /* text on flame/sun when needed */
   --font-display: "Trebuchet MS", "Aptos Display", sans-serif;
   --font-body: "Aptos", "Segoe UI", sans-serif;
   --font-mono: "Cascadia Mono", "SFMono-Regular", monospace;
@@ -70,5 +81,15 @@
     --color-error-soft: oklch(25% 0.055 28);
     --color-shadow: oklch(5% 0.01 145 / 0.42);
     --color-overlay: oklch(5% 0.01 145 / 0.22);
+    /* Warm discovery palette (dark) */
+    --color-cream: oklch(24% 0.02 80);
+    --color-cream-soft: oklch(30% 0.03 80);
+    --color-ink-warm: oklch(92% 0.02 80);
+    --color-teal: oklch(72% 0.09 175);
+    --color-teal-deep: oklch(60% 0.09 175);
+    --color-flame: oklch(72% 0.13 40);
+    --color-flame-hover: oklch(78% 0.12 40);
+    --color-sun: oklch(82% 0.13 90);
+    --color-on-warm: oklch(16% 0.02 40);
   }
 }
