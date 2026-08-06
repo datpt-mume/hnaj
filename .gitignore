@@ -1,0 +1,3 @@
+# Bản dump database tạo thủ công trước khi chạy thao tác nguy hiểm.
+# Không commit: có thể chứa dữ liệu thật.
+.backups/

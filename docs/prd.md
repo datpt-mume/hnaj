@@ -168,6 +168,12 @@ Các tiêu chí gồm:
 
 **Đã chốt về khoảng cách:** hệ thống dùng toạ độ GPS của người dùng nếu người dùng cấp quyền vị trí. Nếu người dùng từ chối hoặc trình duyệt không hỗ trợ, hệ thống chuyển sang lọc theo khu vực đã chọn và không áp dụng tiêu chí khoảng cách. Giao diện phải nói rõ tiêu chí khoảng cách đang không được áp dụng.
 
+**Đã chốt về bán kính mặc định:** khi client gửi tọa độ GPS nhưng không gửi radius_km, hệ thống áp dụng mặc định 5km.
+
+**Đã chốt về giờ mở cửa khi khám phá:** tiêu chí open_now mặc định BẬT (client phải gửi false để tắt). Place chưa có dữ liệu giờ mở cửa (unknown) vẫn được coi là hợp lệ và xuất hiện trong kết quả random khi lọc open_now, để tránh loại nhầm place chỉ vì thiếu dữ liệu.
+
+**Đã chốt về fallback khi loại hết ứng viên:** nếu danh sách place bị bỏ qua trong lượt roll hiện tại (excluded) loại hết mọi ứng viên khớp bộ lọc, hệ thống bỏ qua danh sách loại trừ và random lại từ đầu, thay vì báo không tìm thấy kết quả.
+
 Hệ thống thực hiện:
 
 1. Kiểm tra các tiêu chí đầu vào.

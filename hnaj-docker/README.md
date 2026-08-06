@@ -69,8 +69,22 @@ docker compose --env-file .env up -d --remove-orphans
 docker compose --env-file .env build --no-cache
 docker compose --env-file .env up -d
 
-# Chạy kiểm tra Laravel
+# Chạy kiểm tra Laravel (MySQL, database riêng `hnaj_test`)
+# Test dùng RefreshDatabase => chạy `migrate:fresh`, tức DROP toàn bộ bảng của
+# database đang kết nối. Vì vậy phpunit.xml ép DB_DATABASE=hnaj_test và
+# tests/TestCase.php chặn runtime nếu trỏ vào database khác. Tuyệt đối không
+# đổi giá trị này sang `hnaj` (database production trong .env).
+#
+# Máy mới không cần thao tác gì: mysql/initdb/01-create-test-database.sql tự
+# tạo `hnaj_test` khi volume MySQL được khởi tạo lần đầu.
 docker compose --env-file .env exec backend php artisan test
+
+# Nếu volume MySQL đã tồn tại TỪ TRƯỚC khi có script initdb thì script không
+# chạy (initdb chỉ chạy trên volume trống). Tạo database test thủ công một lần:
+docker compose --env-file .env exec mysql \
+  mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e \
+  "CREATE DATABASE IF NOT EXISTS hnaj_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; \
+   GRANT ALL PRIVILEGES ON hnaj_test.* TO '$MYSQL_USER'@'%'; FLUSH PRIVILEGES;"
 
 # Chạy kiểm tra frontend
 docker compose --env-file .env exec frontend npm run lint

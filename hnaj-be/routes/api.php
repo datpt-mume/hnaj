@@ -8,10 +8,20 @@ use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
 use App\Http\Controllers\Api\Auth\MeController;
 use App\Http\Controllers\Api\Auth\RegisterController;
+use App\Http\Controllers\Api\Discovery\PlaceDiscoveryController;
 use App\Http\Controllers\Api\TestController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/test', TestController::class);
+
+/*
+ * Khám phá/random địa điểm.
+ * Endpoint public (khách chưa đăng nhập dùng được), throttle chống spam.
+ */
+Route::prefix('discovery')->group(function (): void {
+    Route::post('/random', PlaceDiscoveryController::class)
+        ->middleware('throttle:30,1');
+});
 
 /*
  * Authentication cho người dùng thường.

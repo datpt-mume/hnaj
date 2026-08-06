@@ -57,6 +57,10 @@ services:
       - "127.0.0.1:${MYSQL_PORT:-3306}:3306"
     volumes:
       - mysql_data_v2:/var/lib/mysql
+      # Tạo sẵn database `hnaj_test` ở lần khởi tạo volume đầu tiên. Test
+      # (RefreshDatabase) sẽ DROP toàn bộ bảng nên không được dùng chung
+      # database production `hnaj`.
+      - ./mysql/initdb:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
       interval: 5s

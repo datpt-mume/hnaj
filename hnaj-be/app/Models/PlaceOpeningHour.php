@@ -4,11 +4,14 @@ namespace App\Models;
 
 use App\Enums\ScheduleType;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PlaceOpeningHour extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'place_id',
         'day_of_week',
@@ -26,7 +29,7 @@ class PlaceOpeningHour extends Model
     {
         return Attribute::make(
             get: static fn (?string $value): ?string => $value === null ? null : substr($value, 0, 5),
-            set: static fn (?string $value): ?string => $value === null ? null : substr($value, 0, 5) . ':00',
+            set: static fn (?string $value): ?string => $value === null ? null : substr($value, 0, 5).':00',
         );
     }
 
@@ -34,7 +37,7 @@ class PlaceOpeningHour extends Model
     {
         return Attribute::make(
             get: static fn (?string $value): ?string => $value === null ? null : substr($value, 0, 5),
-            set: static fn (?string $value): ?string => $value === null ? null : substr($value, 0, 5) . ':00',
+            set: static fn (?string $value): ?string => $value === null ? null : substr($value, 0, 5).':00',
         );
     }
 
