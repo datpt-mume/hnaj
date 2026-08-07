@@ -189,6 +189,39 @@ class PlaceImportTest extends TestCase
         $this->assertStringNotContainsString('"category"', $prompt);
     }
 
+    public function test_prompt_rejects_force_fit_and_carries_scope_definitions(): void
+    {
+        $prompt = (new PlaceImportPrompt)->build(
+            [['record_ref' => 'record-1', 'title' => 'Cafe']],
+            $this->taxonomy(),
+        );
+
+        // Rule ép chọn category cũ đã bị bỏ: AI phải được phép loại record.
+        $this->assertStringNotContainsString('broad and exhaustive', $prompt);
+        $this->assertStringNotContainsString('Select the closest valid category', $prompt);
+
+        // Cơ chế loại record không khớp category + phạm vi sản phẩm + định nghĩa.
+        $this->assertStringContainsString('out_of_scope', $prompt);
+        $this->assertStringContainsString('category_definitions', $prompt);
+        $this->assertStringContainsString('product_scope', $prompt);
+        $this->assertStringContainsString('reject_rules', $prompt);
+    }
+
+    public function test_prompt_includes_definition_for_every_taxonomy_category(): void
+    {
+        $taxonomy = $this->taxonomy();
+        $taxonomy['categories'][] = ['id' => 11, 'slug' => 'mua-sam', 'name' => 'Mua sắm'];
+
+        $prompt = (new PlaceImportPrompt)->build(
+            [['record_ref' => 'record-1', 'title' => 'Cafe']],
+            $taxonomy,
+        );
+
+        foreach ($taxonomy['categories'] as $category) {
+            $this->assertStringContainsString('"'.$category['slug'].'"', $prompt);
+        }
+    }
+
     public function test_validator_rejects_invalid_ai_price_range(): void
     {
         $result = (new PlaceImportOutputValidator)->validate(
