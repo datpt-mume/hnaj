@@ -132,10 +132,26 @@ export function HomePage() {
           <Link className="home-nav__link" to="/history">Lịch sử</Link>
           <Link className="home-nav__link" to="/suggest">Đề xuất địa điểm</Link>
         </div>
-        <label className="home-search">
-          <span className="sr-only">Tìm kiếm địa điểm</span>
-          <input type="search" placeholder="Tìm kiếm địa điểm, món ăn..." />
-        </label>
+        <form
+          className="home-search"
+          role="search"
+          onSubmit={(event) => {
+            event.preventDefault()
+            const form = event.currentTarget
+            const value = new FormData(form).get('search')?.toString().trim() ?? ''
+            if (value) {
+              navigate(`/search?q=${encodeURIComponent(value)}`)
+            }
+          }}
+        >
+          <label className="sr-only" htmlFor="home-search-input">Tìm kiếm địa điểm</label>
+          <input
+            id="home-search-input"
+            type="search"
+            name="search"
+            placeholder="Tìm kiếm địa điểm, món ăn..."
+          />
+        </form>
         <Link className="home-account" to={user ? '/account' : '/login'} aria-label="Mở tài khoản">
           <RiAccountCircleLine aria-hidden="true" />
           <span>{user ? user.full_name.split(' ').slice(-1)[0] : 'Tài khoản'}</span>

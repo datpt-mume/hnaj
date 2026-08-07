@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\Auth\AdminLoginController;
+use App\Http\Controllers\Api\Place\SearchPlaceController;
 use App\Http\Controllers\Api\Admin\Auth\AdminMeController;
 use App\Http\Controllers\Api\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\Auth\GoogleAuthController;
@@ -21,6 +22,15 @@ Route::get('/test', TestController::class);
 Route::prefix('discovery')->group(function (): void {
     Route::post('/random', PlaceDiscoveryController::class)
         ->middleware('throttle:30,1');
+});
+
+/*
+ * Tìm kiếm địa điểm công khai. Public (khách chưa đăng nhập dùng được),
+ * throttle chống spam query. Đặt trước mọi route `places/{place}` tương lai.
+ */
+Route::prefix('places')->group(function (): void {
+    Route::get('/search', SearchPlaceController::class)
+        ->middleware('throttle:60,1');
 });
 
 /*

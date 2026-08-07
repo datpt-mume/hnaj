@@ -11,6 +11,7 @@ use App\Models\Bookmark;
 use App\Models\Place;
 use App\Models\PlaceOpeningHour;
 use App\Models\VisitEvent;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -57,6 +58,42 @@ class PlaceRepository
         }
 
         return $this->pickBestId($candidateIds, $filters);
+    }
+
+    /**
+     * Search active places by query tokens (ANY within a token across name,
+     * address, tag name or category name; AND between tokens).
+     *
+     * LIKE %token% — no fulltext ranking yet; adequate for MVP scale.
+     * Sorted by rating DESC then name ASC, page-based pagination
+     * (docs/api-search.md).
+     *
+     * @return LengthAwarePaginator<int, Place>
+     */
+    public function search(string $query, int $perPage = 10, int $page = 1): LengthAwarePaginator
+    {
+        $tokens = preg_split('/\s+/u', trim($query), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        $query = Place::query()
+            ->where('status', PlaceStatus::Active)
+            ->with(['district', 'category', 'tags', 'thumbnail', 'openingHours']);
+
+        foreach ($tokens as $token) {
+            // Escape LIKE wildcards so a literal "%" or "_" in the query does
+            // not widen the match (MySQL default escape char is backslash).
+            $like = '%'.addcslashes($token, '\\%_').'%';
+            $query->where(function ($q) use ($like): void {
+                $q->where('places.name', 'like', $like)
+                    ->orWhere('places.address_text', 'like', $like)
+                    ->orWhereHas('category', fn ($c) => $c->where('categories.name', 'like', $like))
+                    ->orWhereHas('tags', fn ($t) => $t->where('tags.name', 'like', $like));
+            });
+        }
+
+        return $query
+            ->orderBy('places.rating', 'desc')
+            ->orderBy('places.name', 'asc')
+            ->paginate($perPage, ['*'], 'page', $page);
     }
 
     /**

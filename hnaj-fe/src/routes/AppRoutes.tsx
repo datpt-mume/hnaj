@@ -6,6 +6,7 @@ import { AdminDashboardPage } from '../pages/AdminDashboardPage'
 import { AdminLoginPage } from '../pages/AdminLoginPage'
 import { GoogleCallbackPage } from '../pages/GoogleCallbackPage'
 import { HomePage } from '../pages/HomePage'
+import { SearchPage } from '../pages/SearchPage'
 import { LoginPage } from '../pages/LoginPage'
 import { RegisterPage } from '../pages/RegisterPage'
 import { VerifyEmailPage } from '../pages/VerifyEmailPage'
@@ -14,6 +15,7 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/search" element={<SearchPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
