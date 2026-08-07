@@ -31,6 +31,7 @@ class PlaceFactory extends Factory
             'longitude' => fake()->longitude(105.7, 106.0),
             'min_price' => null,
             'max_price' => null,
+            'rating' => 5.0,
             'description' => null,
             'thumbnail_image_id' => null,
             'status' => PlaceStatus::Active,
@@ -42,6 +43,13 @@ class PlaceFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'status' => PlaceStatus::Hidden,
+        ]);
+    }
+
+    public function rating(float $rating): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'rating' => $rating,
         ]);
     }
 }

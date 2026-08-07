@@ -84,7 +84,24 @@ class DiscoveryFilterRequest extends FormRequest
                 static fn (mixed $id): int => (int) $id,
                 $this->validated('excluded_place_ids') ?? [],
             ),
+            userId: $this->resolveUserId(),
         );
+    }
+
+    /**
+     * Resolve the user id when the request carries a valid bearer token.
+     *
+     * The discovery endpoint is public, so there is no `auth:sanctum`
+     * middleware; the default guard is `web` (session) and always returns null
+     * for API tokens. Therefore the `sanctum` guard is queried explicitly.
+     * Guests resolve to null and the two personalization criteria (bookmark,
+     * "go there" visit) do not take part in ranking.
+     */
+    private function resolveUserId(): ?int
+    {
+        $user = $this->user('sanctum');
+
+        return $user?->id !== null ? (int) $user->id : null;
     }
 
     private function normalizeBoolean(mixed $value): bool

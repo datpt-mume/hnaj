@@ -28,6 +28,7 @@ class Place extends Model
         'longitude',
         'min_price',
         'max_price',
+        'rating',
         'description',
         'thumbnail_image_id',
         'status',
@@ -39,6 +40,7 @@ class Place extends Model
         'longitude' => 'decimal:7',
         'min_price' => 'integer',
         'max_price' => 'integer',
+        'rating' => 'decimal:1',
         'status' => PlaceStatus::class,
     ];
 

@@ -151,6 +151,7 @@ Category và tag là hai taxonomy độc lập. Không tạo pivot `category_tag
 - [ ] `category_id` — FK tới `categories.id`, mỗi place đúng một category.
 - [ ] `latitude` và `longitude` dạng `DECIMAL(10,7)`.
 - [ ] `min_price` và `max_price` dạng số nguyên không âm, nullable nếu place chưa có thông tin giá.
+- [ ] `rating` dạng `DECIMAL(2,1)`, not null, default `5.0`; thêm bằng migration bổ sung sau khi `places` đã tồn tại.
 - [ ] `description` nullable.
 - [ ] `thumbnail_image_id` nullable; chỉ thêm FK sau khi tạo `place_images`.
 - [ ] `status` dạng `VARCHAR`; chỉ gồm `active`, `hidden`.
@@ -162,12 +163,14 @@ Category và tag là hai taxonomy độc lập. Không tạo pivot `category_tag
 - [ ] Index `status`, `district_id`, `category_id`.
 - [ ] Unique nullable `google_place_id`; bắt buộc application với seed.
 - [ ] Index giá phù hợp với query range; đánh giá composite index sau khi có query contract.
+- [ ] Index `rating` phục vụ xếp hạng lượt khám phá.
 - [ ] Index tọa độ nếu query khoảng cách/không gian cần thiết.
 - [ ] Không unique `name`, `google_maps_url`, latitude/longitude.
 - [ ] Application bảo đảm `min_price <= max_price`.
 - [ ] Application bảo đảm `district_id` thuộc allowlist Hà Nội.
 - [ ] Public query chỉ lấy place `active` và chưa soft-deleted.
 - [ ] Seed accepted được import thẳng `active`, không có bước pending/approval.
+- [ ] `rating` là aggregate denormalize từ `reviews` của User HNAJ (job schedule, phạm vi riêng); seed và pipeline import **không** ghi giá trị này từ Google, place mới giữ default `5.0`.
 
 **Rollback:** trước khi rollback phải rollback mọi bảng có FK tới `places`; không dùng cascade để che giấu dữ liệu phụ thuộc.
 

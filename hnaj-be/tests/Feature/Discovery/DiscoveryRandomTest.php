@@ -4,13 +4,17 @@ namespace Tests\Feature\Discovery;
 
 use App\Enums\PlaceStatus;
 use App\Enums\ScheduleType;
+use App\Models\Bookmark;
 use App\Models\Category;
 use App\Models\District;
 use App\Models\Place;
 use App\Models\Tag;
+use App\Models\User;
+use App\Models\VisitEvent;
 use App\Repositories\PlaceRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 /**
@@ -77,6 +81,25 @@ class DiscoveryRandomTest extends TestCase
         $response->assertJsonPath('success', true);
 
         return $response->json('data');
+    }
+
+    private function bookmark(User $user, Place $place): void
+    {
+        Bookmark::query()->create([
+            'user_id' => $user->id,
+            'place_id' => $place->id,
+        ]);
+    }
+
+    private function visit(User $user, Place $place): void
+    {
+        VisitEvent::query()->create([
+            'user_id' => $user->id,
+            'place_id' => $place->id,
+            'visit_date' => Carbon::today()->toDateString(),
+            'visited_at' => Carbon::now(),
+            'source' => 'discovery',
+        ]);
     }
 
     public function test_returns_an_active_place_when_no_filter(): void
@@ -185,13 +208,14 @@ class DiscoveryRandomTest extends TestCase
         $this->assertSame($placeB->id, $data['id']);
     }
 
-    public function test_excluded_all_matches_falls_back_to_random_without_excluded(): void
+    public function test_excluded_place_is_still_returned_when_it_is_the_only_candidate(): void
     {
         $only = $this->createPlace(['name' => 'Duy nhất']);
 
         $data = $this->randomPlace(['excluded_place_ids' => [$only->id]]);
 
-        // Fallback (docs/prd.md §5.1): vẫn trả về place dù bị excluded vì không còn ứng viên khác.
+        // excluded chỉ hạ ưu tiên, không loại bỏ (docs/prd.md §5.1): lượt khám
+        // phá không bao giờ rỗng chỉ vì roll.
         $this->assertNotNull($data);
         $this->assertSame($only->id, $data['id']);
     }
@@ -434,5 +458,232 @@ class DiscoveryRandomTest extends TestCase
 
         $this->assertNotNull($data, 'Place khớp bộ lọc nhưng bị cắt khỏi tập ứng viên.');
         $this->assertSame($near->id, $data['id']);
+    }
+
+    public function test_response_exposes_rating(): void
+    {
+        $this->createPlace(['name' => 'Có rating', 'rating' => 4.3]);
+
+        $data = $this->randomPlace();
+
+        $this->assertNotNull($data);
+        $this->assertSame(4.3, (float) $data['rating']);
+    }
+
+    public function test_new_place_defaults_to_max_rating(): void
+    {
+        $this->createPlace(['name' => 'Chưa có review']);
+
+        $data = $this->randomPlace();
+
+        $this->assertNotNull($data);
+        // JSON serialize 5.0 thành 5 (float không có phần thập phân), nên so
+        // sánh giá trị số thay vì kiểu.
+        $this->assertSame(5.0, (float) $data['rating']);
+    }
+
+    // ---- Xếp hạng theo thứ tự ưu tiên (docs/prd.md §5.1) ----
+
+    public function test_excluded_place_loses_to_any_other_candidate(): void
+    {
+        // Place bị excluded được ưu ái tối đa ở mọi tiêu chí còn lại: bookmark,
+        // visited và rating cao nhất. Tiêu chí "không phải địa điểm vừa xuất
+        // hiện" vẫn phải thắng, chứng minh trọng số không bị đảo.
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $excluded = $this->createPlace(['name' => 'Vừa xuất hiện', 'rating' => 5.0]);
+        $this->bookmark($user, $excluded);
+        $this->visit($user, $excluded);
+
+        $other = $this->createPlace(['name' => 'Chưa xuất hiện', 'rating' => 1.0]);
+
+        $data = $this->randomPlace(['excluded_place_ids' => [$excluded->id]]);
+
+        $this->assertNotNull($data);
+        $this->assertSame($other->id, $data['id']);
+    }
+
+    public function test_bookmarked_place_wins_over_visited_and_higher_rating(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $bookmarked = $this->createPlace(['name' => 'Đã lưu', 'rating' => 1.0]);
+        $this->bookmark($user, $bookmarked);
+
+        $visited = $this->createPlace(['name' => 'Đã đi tới đó', 'rating' => 5.0]);
+        $this->visit($user, $visited);
+
+        $data = $this->randomPlace();
+
+        $this->assertNotNull($data);
+        $this->assertSame($bookmarked->id, $data['id']);
+    }
+
+    public function test_visited_place_wins_over_higher_rating(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $visited = $this->createPlace(['name' => 'Đã đi tới đó', 'rating' => 1.0]);
+        $this->visit($user, $visited);
+
+        $this->createPlace(['name' => 'Rating cao', 'rating' => 5.0]);
+
+        $data = $this->randomPlace();
+
+        $this->assertNotNull($data);
+        $this->assertSame($visited->id, $data['id']);
+    }
+
+    public function test_personalisation_is_ignored_for_guests(): void
+    {
+        // Bookmark/visit của một user khác không được ảnh hưởng tới lượt khám
+        // phá của khách chưa đăng nhập; khi đó rating quyết định.
+        $someoneElse = User::factory()->create();
+
+        $lowRated = $this->createPlace(['name' => 'Người khác đã lưu', 'rating' => 1.0]);
+        $this->bookmark($someoneElse, $lowRated);
+        $this->visit($someoneElse, $lowRated);
+
+        $highRated = $this->createPlace(['name' => 'Rating cao', 'rating' => 5.0]);
+
+        $data = $this->randomPlace();
+
+        $this->assertNotNull($data);
+        $this->assertSame($highRated->id, $data['id']);
+    }
+
+    public function test_bookmark_of_another_user_does_not_leak_into_ranking(): void
+    {
+        $user = User::factory()->create();
+        $someoneElse = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $othersBookmark = $this->createPlace(['name' => 'Người khác lưu', 'rating' => 1.0]);
+        $this->bookmark($someoneElse, $othersBookmark);
+
+        $highRated = $this->createPlace(['name' => 'Rating cao', 'rating' => 5.0]);
+
+        $data = $this->randomPlace();
+
+        $this->assertNotNull($data);
+        $this->assertSame($highRated->id, $data['id']);
+    }
+
+    public function test_nearer_place_wins_over_higher_rating(): void
+    {
+        $near = $this->createPlace([
+            'name' => 'Gần, rating thấp',
+            'rating' => 1.0,
+            'latitude' => 21.0285,
+            'longitude' => 105.8542,
+        ]);
+
+        // Vẫn trong bán kính 5km nhưng xa hơn đáng kể.
+        $this->createPlace([
+            'name' => 'Xa hơn, rating cao',
+            'rating' => 5.0,
+            'latitude' => 21.0600,
+            'longitude' => 105.8542,
+        ]);
+
+        $data = $this->randomPlace([
+            'lat' => 21.0285,
+            'lng' => 105.8542,
+            'radius_km' => 5,
+        ]);
+
+        $this->assertNotNull($data);
+        $this->assertSame($near->id, $data['id']);
+    }
+
+    public function test_higher_rating_wins_when_other_criteria_are_equal(): void
+    {
+        $this->createPlace(['name' => 'Rating thấp', 'rating' => 2.0]);
+        $best = $this->createPlace(['name' => 'Rating cao', 'rating' => 4.8]);
+
+        $data = $this->randomPlace();
+
+        $this->assertNotNull($data);
+        $this->assertSame($best->id, $data['id']);
+    }
+
+    public function test_rating_is_ignored_when_coordinates_absent_but_distance_matters_with_them(): void
+    {
+        // Không gửi toạ độ: độ gần bằng 0 cho mọi ứng viên nên rating quyết định,
+        // kể cả khi place rating cao nằm rất xa.
+        $farHighRated = $this->createPlace([
+            'name' => 'Xa nhưng rating cao',
+            'rating' => 5.0,
+            'latitude' => 10.7769,
+            'longitude' => 106.7009,
+        ]);
+
+        $this->createPlace([
+            'name' => 'Gần nhưng rating thấp',
+            'rating' => 1.0,
+            'latitude' => 21.0285,
+            'longitude' => 105.8542,
+        ]);
+
+        $data = $this->randomPlace();
+
+        $this->assertNotNull($data);
+        $this->assertSame($farHighRated->id, $data['id']);
+    }
+
+    // ---- Bearer token thật và rating constraint ----
+
+    public function test_bearer_token_personalizes_ranking(): void
+    {
+        // Token thật qua header (không dùng Sanctum::actingAs giả lập) để chứng
+        // minh endpoint public vẫn đọc được user từ guard sanctum.
+        $user = User::factory()->create();
+        $token = $user->createToken('test')->plainTextToken;
+
+        $bookmarked = $this->createPlace(['name' => 'Đã lưu bởi user', 'rating' => 1.0]);
+        $this->bookmark($user, $bookmarked);
+
+        $this->createPlace(['name' => 'Rating cao', 'rating' => 5.0]);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson('/api/discovery/random', []);
+
+        $response->assertOk();
+        $this->assertSame($bookmarked->id, $response->json('data.id'));
+    }
+
+    public function test_invalid_bearer_token_still_serves_guest_ranking(): void
+    {
+        $someoneElse = User::factory()->create();
+
+        $theirBookmark = $this->createPlace(['name' => 'Người khác lưu', 'rating' => 1.0]);
+        $this->bookmark($someoneElse, $theirBookmark);
+
+        $best = $this->createPlace(['name' => 'Rating cao', 'rating' => 5.0]);
+
+        // Token sai không làm request thất bại; chỉ mất cá nhân hóa (guest).
+        $response = $this->withHeader('Authorization', 'Bearer not-a-real-token')
+            ->postJson('/api/discovery/random', []);
+
+        $response->assertOk();
+        $this->assertSame($best->id, $response->json('data.id'));
+    }
+
+    public function test_rating_out_of_range_is_rejected_by_database(): void
+    {
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        // DECIMAL(2,1) + CHECK 0..5 chặn giá trị ngoài miền.
+        Place::factory()->create(['rating' => 5.1]);
+    }
+
+    public function test_rating_negative_is_rejected_by_database(): void
+    {
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        Place::factory()->create(['rating' => -0.1]);
     }
 }

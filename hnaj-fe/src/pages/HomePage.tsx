@@ -147,7 +147,7 @@ export function HomePage() {
           <p className="home-discover__kicker">Hôm nay ăn gì?</p>
           <h1 id="discover-title">Bớt phân vân. Đi thôi.</h1>
           <p className="home-discover__lead">
-            Chọn vài tiêu chí — hoặc không chọn gì — rồi để chúng tôi chọn ngẫu nhiên một nơi
+            Chọn vài tiêu chí — hoặc không chọn gì — rồi để chúng tôi đề xuất một nơi
             hợp ý cho bạn.
           </p>
         </header>
@@ -158,7 +158,7 @@ export function HomePage() {
           <div className="home-discover__submit">
             <button className="button button--flame button--random" type="submit">
               <RiDiceLine aria-hidden="true" />
-              {hasRolled ? 'Chọn địa điểm khác' : 'Random cho tôi một nơi'}
+              {hasRolled ? 'Đề xuất địa điểm khác' : 'Đề xuất cho tôi một nơi'}
             </button>
           </div>
         </form>

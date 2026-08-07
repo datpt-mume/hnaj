@@ -193,6 +193,7 @@ Danh sách phẳng các quận, huyện và thị xã thuộc địa giới hàn
 | `longitude` | DECIMAL(10,7) | Không | Tọa độ chuẩn hóa |
 | `min_price` | UNSIGNED BIGINT | Có | Giá thấp nhất theo số nguyên VND; CSV import dùng trực tiếp giá AI đã chuẩn hóa |
 | `max_price` | UNSIGNED BIGINT | Có | Giá cao nhất theo số nguyên VND; CSV import dùng trực tiếp giá AI đã chuẩn hóa |
+| `rating` | DECIMAL(2,1) | Không | Điểm đánh giá tổng hợp 0.0–5.0, denormalize từ `reviews` của User HNAJ bằng job schedule; default `5.0` khi chưa có review. **Không** import từ Google |
 | `description` | TEXT | Có | Mô tả |
 | `thumbnail_image_id` | BIGINT UNSIGNED | Có | FK `place_images.id`; ảnh chính dùng cho card random |
 | `status` | VARCHAR | Không | Chỉ `active` hoặc `hidden` |
@@ -200,9 +201,11 @@ Danh sách phẳng các quận, huyện và thị xã thuộc địa giới hàn
 | `created_at`, `updated_at` | DATETIME | Không | Timestamps |
 | `deleted_at` | DATETIME | Có | Xóa mềm |
 
-**Index:** `status`, `district_id`, `category_id`, `google_place_id`, `min_price`, `max_price`, tọa độ. `google_place_id` unique nullable để seed có thể rerun idempotent; không unique theo tên hoặc tọa độ.
+**Index:** `status`, `district_id`, `category_id`, `google_place_id`, `min_price`, `max_price`, `rating`, tọa độ. `google_place_id` unique nullable để seed có thể rerun idempotent; không unique theo tên hoặc tọa độ.
 
 **Migration note:** `thumbnail_image_id` nullable được thêm FK sau khi tạo `place_images`, vì `place_images.place_id` đồng thời tham chiếu ngược về `places`.
+
+**Migration note:** `rating` được thêm bằng migration bổ sung sau khi `places` đã tồn tại; là nguồn cho tiêu chí "điểm đánh giá cao hơn" khi xếp hạng lượt khám phá (docs/prd.md §5.1). Job tính lại giá trị này từ `reviews` là phạm vi riêng, chưa triển khai.
 
 #### `categories`
 

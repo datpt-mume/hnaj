@@ -3,11 +3,18 @@
 namespace App\Actions\Discovery;
 
 /**
- * Value object mô tả bộ lọc khám phá/random địa điểm.
+ * Value object describing the discovery filters.
  *
- * Tất cả thuộc tính đều tùy chọn. `open_now` mặc định là true vì client
- * khám phá luôn muốn lọc place đang mở (docs/prd.md §5.1); gửi `false` để
- * tắt lọc giờ.
+ * All properties are optional. `open_now` defaults to true because discovery
+ * clients always want open places (docs/prd.md §5.1); send `false` to disable
+ * the hour filter.
+ *
+ * `excludedPlaceIds` is no longer a hard filter: it is the highest-priority
+ * ranking criterion (see PlaceScorer), so a just-shown place is only demoted
+ * and is still selectable as the sole candidate.
+ *
+ * `userId` is the personalization context: null for guests, in which case the
+ * bookmark and "already visited" criteria do not take part in ranking.
  */
 final readonly class DiscoveryFilters
 {
@@ -24,5 +31,6 @@ final readonly class DiscoveryFilters
         public ?float $radiusKm = null,
         /** @var array<int, int> */
         public array $excludedPlaceIds = [],
+        public ?int $userId = null,
     ) {}
 }

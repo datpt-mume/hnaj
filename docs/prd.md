@@ -172,14 +172,28 @@ Các tiêu chí gồm:
 
 **Đã chốt về giờ mở cửa khi khám phá:** tiêu chí open_now mặc định BẬT (client phải gửi false để tắt). Place chưa có dữ liệu giờ mở cửa (unknown) vẫn được coi là hợp lệ và xuất hiện trong kết quả random khi lọc open_now, để tránh loại nhầm place chỉ vì thiếu dữ liệu.
 
-**Đã chốt về fallback khi loại hết ứng viên:** nếu danh sách place bị bỏ qua trong lượt roll hiện tại (excluded) loại hết mọi ứng viên khớp bộ lọc, hệ thống bỏ qua danh sách loại trừ và random lại từ đầu, thay vì báo không tìm thấy kết quả.
+**Đã chốt (thay thế quyết định fallback trước đây) về cách chọn kết quả:** lượt khám phá không còn là random thuần trên tập khớp bộ lọc. Sau khi lọc, hệ thống chấm điểm mọi ứng viên theo thứ tự ưu tiên giảm dần và chọn place điểm cao nhất:
+
+1. Không phải địa điểm vừa xuất hiện trong lượt hiện tại (không nằm trong excluded).
+2. Địa điểm người dùng đã lưu (bookmark).
+3. Địa điểm người dùng đã bấm “Đi tới đó”.
+4. Địa điểm gần hơn.
+5. Địa điểm có điểm đánh giá cao hơn.
+
+Mỗi tiêu chí có trọng số lớn hơn tổng trọng số của toàn bộ tiêu chí xếp sau, nên thứ tự ưu tiên không bị đảo; tiêu chí sau chỉ quyết định khi các tiêu chí trước bằng nhau. Ứng viên đồng điểm được chọn ngẫu nhiên.
+
+Hệ quả thay thế quyết định fallback cũ: danh sách excluded chỉ **hạ ưu tiên** chứ không loại bỏ ứng viên, nên không cần bước “bỏ qua excluded và random lại từ đầu”. Lượt khám phá vẫn không bao giờ rỗng chỉ vì roll.
+
+Hai tiêu chí cá nhân hóa (bookmark, đã đi tới đó) chỉ áp dụng cho người dùng đã đăng nhập. Với khách chưa đăng nhập, hai tiêu chí này bằng 0 cho mọi ứng viên và thứ tự do các tiêu chí còn lại quyết định.
+
+**Đã chốt về điểm đánh giá dùng khi xếp hạng:** điểm đánh giá của place được lưu denormalize ở `places.rating` (0.0–5.0, một chữ số thập phân) và được tính từ review của User HNAJ bằng job schedule. Đây **không** phải rating import từ Google — quyết định “không nhập rating/review từ Google” vẫn còn hiệu lực. Place chưa có review giữ mặc định 5.0 để không bị hạ hạng chỉ vì thiếu dữ liệu, cùng nguyên tắc với giờ mở cửa unknown.
 
 Hệ thống thực hiện:
 
 1. Kiểm tra các tiêu chí đầu vào.
 2. Tìm các place đang hoạt động và phù hợp với bộ lọc.
-3. Loại các place bị loại trong lượt roll hiện tại.
-4. Chọn ngẫu nhiên một place từ tập kết quả còn lại.
+3. Chấm điểm mọi ứng viên theo các tiêu chí ưu tiên ở trên.
+4. Chọn place điểm cao nhất; nếu nhiều place đồng điểm thì chọn ngẫu nhiên trong số đó.
 5. Hiển thị thẻ/kết quả đề xuất và thông tin đủ để người dùng quyết định.
 
 Nếu không có kết quả:

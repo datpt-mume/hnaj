@@ -41,6 +41,9 @@ class PlaceResource extends JsonResource
             ])->values()),
             'min_price' => $this->min_price,
             'max_price' => $this->max_price,
+            // Aggregate rating from User HNAJ reviews; places without reviews
+            // keep the 5.0 default.
+            'rating' => $this->rating !== null ? (float) $this->rating : null,
             'thumbnail' => $this->whenLoaded('thumbnail', fn () => $this->thumbnail ? [
                 'image_url' => $this->thumbnail->image_url,
                 'alt_text' => $this->thumbnail->alt_text,

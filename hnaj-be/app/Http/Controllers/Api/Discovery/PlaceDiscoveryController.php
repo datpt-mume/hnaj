@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api\Discovery;
 
-use App\Actions\Discovery\GetRandomPlace;
+use App\Actions\Discovery\SelectBestPlace;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Discovery\DiscoveryFilterRequest;
 use App\Http\Resources\PlaceResource;
@@ -11,9 +11,9 @@ use Illuminate\Http\JsonResponse;
 
 class PlaceDiscoveryController extends Controller
 {
-    public function __invoke(DiscoveryFilterRequest $request, GetRandomPlace $getRandomPlace): JsonResponse
+    public function __invoke(DiscoveryFilterRequest $request, SelectBestPlace $selectBestPlace): JsonResponse
     {
-        $place = $getRandomPlace->handle($request->filters());
+        $place = $selectBestPlace->handle($request->filters());
 
         if ($place === null) {
             return ApiResponse::success(

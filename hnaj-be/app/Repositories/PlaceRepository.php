@@ -2,11 +2,15 @@
 
 namespace App\Repositories;
 
+use App\Actions\Discovery\DiscoveryContext;
 use App\Actions\Discovery\DiscoveryFilters;
+use App\Actions\Discovery\PlaceScorer;
 use App\Enums\PlaceStatus;
 use App\Enums\ScheduleType;
+use App\Models\Bookmark;
 use App\Models\Place;
 use App\Models\PlaceOpeningHour;
+use App\Models\VisitEvent;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -14,45 +18,88 @@ use Illuminate\Support\Collection;
 class PlaceRepository
 {
     /**
-     * Số id ứng viên tối đa hydrate cùng lúc khi lọc bằng PHP.
+     * Max candidate ids hydrated at once while filtering/scoring in PHP.
      *
-     * Đây là kích thước lô xử lý, KHÔNG phải giới hạn tổng số ứng viên: danh
-     * sách id khớp SQL được nạp đầy đủ (id là số nguyên nên rất nhẹ) rồi xáo
-     * trộn và duyệt theo từng lô. Nhờ vậy mọi place đều có cơ hội được chọn,
-     * và endpoint không báo "không tìm thấy" khi thực tế vẫn còn place khớp.
+     * This is a processing batch size, NOT a total candidate limit: all ids
+     * matching SQL are loaded (ids are integers, so cheap) then processed in
+     * batches. Every place gets scored, and the endpoint never reports "not
+     * found" while matching places still exist.
      */
     public const MAX_CANDIDATE_IDS = 500;
 
     /**
-     * Giới hạn số lượng place id client gửi để loại khỏi lượt roll
-     * (docs/prd.md §5.1).
+     * Max number of place ids the client may send to lower priority in the
+     * current round (docs/prd.md §5.1).
      */
     public const MAX_EXCLUDED_IDS = 100;
 
+    public function __construct(
+        private readonly PlaceScorer $scorer,
+    ) {}
+
     /**
-     * Trả về id của một place active khớp bộ lọc, hoặc null nếu không còn.
+     * Return the id of the best place matching the filters, or null if none.
      *
-     * Lọc có index (category, district, khoảng giá, tags ALL, excluded) chạy
-     * trong SQL; khoảng cách và giờ mở cửa (open_now) được tính bằng PHP trên
-     * tập ứng viên đã nạp để tương thích cả MySQL lẫn SQLite và dễ kiểm thử.
+     * Indexed filters (category, district, price range, tags ALL) run in SQL;
+     * distance and opening hours (open_now) are computed in PHP over the loaded
+     * candidate set for MySQL/SQLite compatibility and easy testing. After
+     * filtering, every candidate is scored by PlaceScorer and the highest score
+     * wins (random tie-break among tied places).
      */
-    public function randomPlaceId(?DiscoveryFilters $filters = null): ?int
+    public function bestPlaceId(?DiscoveryFilters $filters = null): ?int
     {
         $filters ??= new DiscoveryFilters;
 
-        $candidateIds = $this->queryCandidateIds($filters, withExcluded: true);
+        $candidateIds = $this->queryCandidateIds($filters);
 
         if ($candidateIds->isEmpty()) {
             return null;
         }
 
-        return $this->pickRandomId($candidateIds);
+        return $this->pickBestId($candidateIds, $filters);
+    }
+
+    /**
+     * @param  array<int, int>  $candidateIds
+     * @return array<int, int>
+     */
+    public function bookmarkedPlaceIds(int $userId, array $candidateIds): array
+    {
+        if ($candidateIds === []) {
+            return [];
+        }
+
+        return Bookmark::query()
+            ->where('user_id', $userId)
+            ->whereIn('place_id', $candidateIds)
+            ->pluck('place_id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->all();
+    }
+
+    /**
+     * @param  array<int, int>  $candidateIds
+     * @return array<int, int>
+     */
+    public function visitedPlaceIds(int $userId, array $candidateIds): array
+    {
+        if ($candidateIds === []) {
+            return [];
+        }
+
+        return VisitEvent::query()
+            ->where('user_id', $userId)
+            ->whereIn('place_id', $candidateIds)
+            ->distinct()
+            ->pluck('place_id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->all();
     }
 
     /**
      * @return Collection<int, int>
      */
-    private function queryCandidateIds(DiscoveryFilters $filters, bool $withExcluded): Collection
+    private function queryCandidateIds(DiscoveryFilters $filters): Collection
     {
         $query = Place::query()
             ->where('status', PlaceStatus::Active)
@@ -88,13 +135,14 @@ class PlaceRepository
             });
         }
 
-        if ($withExcluded && $filters->excludedPlaceIds !== []) {
-            $query->whereNotIn('places.id', array_slice($filters->excludedPlaceIds, 0, self::MAX_EXCLUDED_IDS));
-        }
+        // excluded_place_ids is no longer a SQL filter: it is a ranking
+        // criterion (PlaceScorer::WEIGHT_NOT_EXCLUDED). A just-shown place is
+        // only demoted and is still selectable as the sole candidate, replacing
+        // the old "re-pick without excluded" fallback.
 
-        // Nạp toàn bộ id khớp SQL (không cắt trước khi lọc). Cắt sớm bằng
-        // limit() sẽ khiến place nằm ngoài trang đầu không bao giờ được chọn,
-        // và trả về "không tìm thấy" dù vẫn còn place khớp ở phía sau.
+        // Load all SQL-matching ids (no early cut). An early limit() would make
+        // places beyond the first page never selectable, and report "not found"
+        // while matching places still exist.
         $ids = $query
             ->pluck('places.id')
             ->map(static fn (mixed $id): int => (int) $id);
@@ -103,11 +151,10 @@ class PlaceRepository
     }
 
     /**
-     * Lọc theo khoảng cách (Haversine) và giờ mở cửa bằng PHP trên tập id đã nạp.
+     * Filter loaded ids by distance (Haversine) and opening hours in PHP.
      *
-     * Xáo trộn trước rồi hydrate theo lô MAX_CANDIDATE_IDS và dừng ngay khi
-     * đã có ứng viên hợp lệ: chi phí bộ nhớ vẫn bị chặn, nhưng mọi place đều
-     * có cơ hội xuất hiện thay vì chỉ trang đầu theo id.
+     * Process in MAX_CANDIDATE_IDS batches to bound memory, but do NOT stop
+     * early: ranking needs every valid candidate to find the best place.
      *
      * @param  Collection<int, int>  $ids
      * @return Collection<int, int>
@@ -115,7 +162,7 @@ class PlaceRepository
     private function filterDistanceAndOpeningHours(Collection $ids, DiscoveryFilters $filters): Collection
     {
         if ($ids->isEmpty() || (! $filters->openNow && $filters->latitude === null)) {
-            return $ids->shuffle()->take(self::MAX_CANDIDATE_IDS)->values();
+            return $ids->values();
         }
 
         $radius = $filters->latitude !== null
@@ -124,7 +171,7 @@ class PlaceRepository
 
         $matched = [];
 
-        foreach ($ids->shuffle()->chunk(self::MAX_CANDIDATE_IDS) as $chunk) {
+        foreach ($ids->chunk(self::MAX_CANDIDATE_IDS) as $chunk) {
             $places = Place::query()
                 ->whereKey($chunk->all())
                 ->with([
@@ -137,10 +184,6 @@ class PlaceRepository
                     && $this->withinRadius($place, $filters, $radius)) {
                     $matched[] = (int) $place->id;
                 }
-            }
-
-            if ($matched !== []) {
-                break;
             }
         }
 
@@ -222,8 +265,8 @@ class PlaceRepository
     }
 
     /**
-     * Chuyển Carbon isoWeekday (1=T2 ... 7=CN) sang quy ước stored
-     * (2=T2 ... 8=CN) theo pipeline import.
+     * Convert Carbon isoWeekday (1=Mon ... 7=Sun) to the stored convention
+     * (2=Mon ... 8=Sun) used by the import pipeline.
      */
     private function isoDayToStored(Carbon $date): int
     {
@@ -233,12 +276,85 @@ class PlaceRepository
     }
 
     /**
+     * Score every candidate and pick the highest-scoring place.
+     *
+     * Tied candidates are chosen randomly so a discovery round does not always
+     * return the same place when the priority criteria cannot tell them apart.
+     *
      * @param  Collection<int, int>  $ids
      */
-    private function pickRandomId(Collection $ids): int
+    private function pickBestId(Collection $ids, DiscoveryFilters $filters): int
     {
-        $id = Arr::random($ids->all());
+        $context = $this->buildContext($ids, $filters);
 
-        return (int) $id;
+        $bestScore = null;
+        /** @var array<int, int> $bestIds */
+        $bestIds = [];
+
+        foreach ($ids->chunk(self::MAX_CANDIDATE_IDS) as $chunk) {
+            $places = Place::query()
+                ->whereKey($chunk->all())
+                ->select('places.id', 'places.latitude', 'places.longitude', 'places.rating')
+                ->get();
+
+            foreach ($places as $place) {
+                $score = $this->scorer->score($place, $context, $this->distanceTo($place, $context));
+
+                if ($bestScore === null || $score > $bestScore) {
+                    $bestScore = $score;
+                    $bestIds = [(int) $place->id];
+
+                    continue;
+                }
+
+                if ($score === $bestScore) {
+                    $bestIds[] = (int) $place->id;
+                }
+            }
+        }
+
+        // $ids is non-empty, so at least one candidate was scored.
+        return (int) Arr::random($bestIds);
+    }
+
+    /**
+     * @param  Collection<int, int>  $ids
+     */
+    private function buildContext(Collection $ids, DiscoveryFilters $filters): DiscoveryContext
+    {
+        $candidateIds = $ids->all();
+
+        $bookmarked = [];
+        $visited = [];
+
+        if ($filters->userId !== null) {
+            $bookmarked = $this->bookmarkedPlaceIds($filters->userId, $candidateIds);
+            $visited = $this->visitedPlaceIds($filters->userId, $candidateIds);
+        }
+
+        return new DiscoveryContext(
+            excludedIds: DiscoveryContext::toLookup(
+                array_slice($filters->excludedPlaceIds, 0, self::MAX_EXCLUDED_IDS),
+            ),
+            bookmarkedIds: DiscoveryContext::toLookup($bookmarked),
+            visitedIds: DiscoveryContext::toLookup($visited),
+            latitude: $filters->latitude,
+            longitude: $filters->longitude,
+            radiusKm: $filters->latitude !== null ? ($filters->radiusKm ?? 5.0) : null,
+        );
+    }
+
+    private function distanceTo(Place $place, DiscoveryContext $context): ?float
+    {
+        if ($context->latitude === null || $context->longitude === null) {
+            return null;
+        }
+
+        return $this->haversineKm(
+            (float) $place->latitude,
+            (float) $place->longitude,
+            $context->latitude,
+            $context->longitude,
+        );
     }
 }

@@ -1,4 +1,5 @@
 import { apiRequest } from './httpClient'
+import { userTokenStorage } from './tokenStorage'
 
 /** Contract at docs/api-discovery.md — POST /api/discovery/random (public). */
 export type DiscoveryOpeningHour = {
@@ -17,6 +18,8 @@ export type DiscoveryPlace = {
   tags: { id: number; name: string; slug: string }[]
   min_price: number | null
   max_price: number | null
+  /** Điểm đánh giá tổng hợp 0.0-5.0; mặc định 5.0 khi place chưa có review. */
+  rating: number | null
   thumbnail: { image_url: string; alt_text: string } | null
   latitude: number
   longitude: number
@@ -48,9 +51,14 @@ export async function randomPlace(
     body.excluded_place_ids = excludedPlaceIds
   }
 
+  // Send bearer token when logged in so backend can personalize ranking
+  // (bookmark/visit priority). Unauthenticated requests still work as guest.
+  const token = userTokenStorage.get()
+
   const response = await apiRequest<DiscoveryResult>('/discovery/random', {
     method: 'POST',
     body,
+    token,
   })
 
   return response.data
