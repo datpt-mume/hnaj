@@ -148,6 +148,17 @@ Sau khi triển khai:
 4. Không tuyên bố thành công nếu chưa kiểm chứng.
 5. Nếu không thể chạy một bước, báo rõ lệnh/bước chưa chạy, lý do và rủi ro còn lại.
 
+#### Kiểm tra giao diện bắt buộc
+
+Khi task thay đổi, sửa hoặc thêm giao diện, phải kiểm tra giao diện thật sau mỗi lần thay đổi:
+
+1. Khởi chạy ứng dụng trong môi trường chạy thực tế phù hợp; dùng browser hiện có để mở đúng route.
+2. Chụp ảnh màn hình sau thay đổi tại các viewport **375px, 768px và 1440px**.
+3. Với mỗi trạng thái có tồn tại hoặc có thể kích hoạt, chụp và kiểm tra riêng: loading, error, empty, success, permission/unauthenticated. Kiểm tra thêm responsive, overflow, typography, spacing, contrast, focus keyboard, hit target và các interaction chính.
+4. Nếu phát hiện bất kỳ lỗi hiển thị, responsive, accessibility hoặc interaction nào, phải sửa rồi chụp và kiểm tra lại toàn bộ viewport/trạng thái liên quan. Không coi task hoàn thành khi còn lỗi chưa xử lý.
+5. Nếu môi trường không hỗ trợ browser hoặc chụp ảnh màn hình, phải báo rõ bước chưa thực hiện và không tuyên bố kiểm tra giao diện đạt; không tự thêm dependency để né yêu cầu.
+6. Sau vòng kiểm tra cuối, xóa toàn bộ ảnh màn hình và file tạm được tạo trong quá trình kiểm tra; không đưa chúng vào diff hoặc commit.
+
 ### 5.5. Bàn giao
 
 Báo cáo cuối cùng phải gồm:
@@ -355,7 +366,7 @@ Mục tiêu là clone repository và khởi chạy toàn bộ hệ thống bằn
 - Feature quan trọng phải có test phù hợp với rủi ro và lớp thay đổi.
 - Backend ưu tiên test ở boundary/use case phù hợp và bổ sung unit test cho logic cô lập khi có giá trị.
 - Frontend ưu tiên test hành vi người dùng và contract service thay vì test implementation detail.
-- Thay đổi UI nhỏ có thể không cần test tự động mới, nhưng phải chạy build và lint hiện có, đồng thời kiểm tra thủ công khi có thể.
+- Mọi thay đổi UI, dù nhỏ, phải kiểm tra giao diện thật bằng browser và ảnh chụp tại 375px, 768px và 1440px; phải kiểm tra mọi trạng thái UI có tồn tại hoặc có thể kích hoạt, sửa và lặp lại đến khi đạt, sau đó xóa ảnh chụp tạm.
 - Thay đổi API phải kiểm tra success, validation error, authorization và edge case phù hợp.
 - Thay đổi migration/repository phải kiểm tra constraint, rollback và hành vi dữ liệu liên quan khi có thể.
 
@@ -367,6 +378,7 @@ Một task chỉ được xem là hoàn thành khi:
 
 - Hành vi đáp ứng yêu cầu và phạm vi đã duyệt.
 - Kiến trúc BE/FE tuân thủ quy tắc phân lớp.
+- Nếu task ảnh hưởng giao diện, đã kiểm tra giao diện thật bằng browser ở 375px, 768px và 1440px, đã chụp/kiểm tra mọi trạng thái UI liên quan, đã sửa và lặp lại đến khi không còn lỗi, rồi đã xóa toàn bộ ảnh chụp và file tạm.
 - API, frontend consumer và tài liệu contract được đồng bộ khi liên quan.
 - Validation, authorization, error handling và edge case phù hợp đã được xem xét.
 - Test cần thiết đã được thêm/cập nhật.
@@ -427,6 +439,8 @@ Ví dụ loại commit có thể dùng khi phù hợp: `feat`, `fix`, `refactor`
 - [ ] Diff chỉ chứa thay đổi thuộc task.
 - [ ] Không có secret, debug code hoặc file sinh ra ngoài ý muốn.
 - [ ] Backend, frontend, API docs và Docker đã đồng bộ khi liên quan.
+- [ ] Nếu có thay đổi UI, đã kiểm tra giao diện thật tại 375px, 768px và 1440px; đã kiểm tra mọi trạng thái liên quan; đã lặp lại sau khi sửa lỗi.
+- [ ] Đã xóa toàn bộ ảnh chụp màn hình và file tạm sinh ra trong quá trình kiểm tra UI.
 - [ ] Regression test/feature test đã được bổ sung khi cần.
 - [ ] Test, lint, format và build liên quan đã chạy theo script thật trong Docker Compose.
 - [ ] Mọi bước chưa chạy và rủi ro còn lại đã được báo rõ.

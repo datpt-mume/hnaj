@@ -771,11 +771,6 @@
 }
 
 .home-discover {
-  display: grid;
-  grid-template-columns: minmax(0, 1.06fr) minmax(18rem, 0.74fr);
-  grid-template-areas: 'content visual';
-  align-items: center;
-  gap: clamp(var(--space-xl), 5vw, var(--space-3xl));
   width: min(100%, 84rem);
   max-width: 84rem;
   min-height: calc(100dvh - 4.5rem);
@@ -783,8 +778,16 @@
   padding: clamp(var(--space-xl), 5vw, var(--space-3xl)) clamp(var(--space-md), 4vw, var(--space-2xl));
 }
 
-.home-discover__content { grid-area: content; min-width: 0; }
-.home-discover__header { max-width: 48rem; margin-bottom: var(--space-lg); }
+.home-discover__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.6fr);
+  grid-template-areas:
+    'header header'
+    'form visual';
+  align-items: stretch;
+  gap: var(--space-lg) clamp(var(--space-xl), 5vw, var(--space-3xl));
+}
+.home-discover__header { grid-area: header; max-width: 48rem; }
 .home-discover__lead {
   max-width: 42rem;
   margin: var(--space-lg) 0 0;
@@ -814,6 +817,7 @@
   color: var(--color-ink);
 }
 .home-discover__form {
+  grid-area: form;
   display: grid;
   gap: var(--space-md);
   padding: 0;
@@ -836,6 +840,7 @@
 /* ========== Food Poster Slideshow ========== */
 .food-poster-slideshow {
   grid-area: visual;
+  align-self: end;
   min-width: 0;
   justify-self: center;
   width: min(100%, 28rem);
@@ -843,7 +848,7 @@
 
 .food-poster-slideshow__viewport {
   position: relative;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 4 / 2.2;
   overflow: hidden;
   border-radius: var(--radius-card);
   outline: 2px solid transparent;
@@ -896,27 +901,6 @@
 }
 .food-poster-slideshow__caption-detail { font-size: var(--text-sm); line-height: 1.45; opacity: 0.9; }
 
-.food-poster-slideshow__control {
-  position: absolute;
-  top: 50%;
-  z-index: 2;
-  display: grid;
-  width: 2.75rem;
-  height: 2.75rem;
-  place-items: center;
-  border: var(--rule-thin) solid rgba(255, 255, 255, 0.8);
-  border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--color-ink);
-  font-size: 1.5rem;
-  cursor: pointer;
-  transform: translateY(-50%);
-  transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out);
-}
-.food-poster-slideshow__control--previous { left: var(--space-md); }
-.food-poster-slideshow__control--next { right: var(--space-md); }
-.food-poster-slideshow__control:hover { background: var(--color-primary); color: var(--color-primary-ink); }
-.food-poster-slideshow__control:focus-visible,
 .food-poster-slideshow__indicator:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; }
 
 .food-poster-slideshow__indicators {
@@ -1050,7 +1034,7 @@
   cursor: not-allowed;
   opacity: 0.72;
 }
-.filter-combobox__value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.filter-combobox__value { min-width: 0; overflow: visible; white-space: nowrap; }
 .filter-combobox__icon {
   flex: 0 0 auto;
   font-size: 1.25rem;
@@ -1627,21 +1611,20 @@
 
 @media (max-width: 48rem) {
   .home-discover {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      'visual'
-      'content';
-    align-items: start;
-    gap: var(--space-xl);
     min-height: 0;
     overflow-x: hidden;
   }
+  .home-discover__layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'visual'
+      'header'
+      'form';
+    align-items: start;
+    gap: var(--space-xl);
+  }
   .food-poster-slideshow {
     width: min(100%, 22rem);
-  }
-  .food-poster-slideshow__control {
-    width: 2.75rem;
-    height: 2.75rem;
   }
   .filter-panel {
     grid-template-columns: 1fr;
@@ -1698,15 +1681,23 @@
 }
 
 @media (min-width: 60.01rem) {
-  .home-shell { min-height: 100dvh; }
-  .home-discover { min-height: calc(100dvh - 4.5rem); padding-block: 1.25rem 0.75rem; }
-  .home-discover__header { margin-bottom: 0.75rem; }
-  .home-discover__header h1 { font-size: clamp(2.5rem, 3.5vw, 3.4rem); line-height: 0.98; }
-  .home-discover__form { gap: 0.75rem; padding: 1rem; }
-  .filter-panel { gap: 0.75rem; }
-  .filter-group { gap: 0.4rem; }
-  .chip { min-height: 2.75rem; }
-  .button--random { min-height: 3rem; }
+  .home-shell { height: 100dvh; min-height: 0; overflow: hidden; }
+  .home-discover { height: calc(100dvh - 4.5rem); min-height: 0; padding-block: 0.75rem; }
+  .home-discover__layout { height: 100%; grid-template-rows: auto minmax(0, 1fr); gap: 0.5rem clamp(var(--space-xl), 5vw, var(--space-3xl)); }
+  .home-discover__header h1 { font-size: clamp(2.25rem, 3vw, 3.1rem); line-height: 0.98; }
+  .home-discover__lead { margin-top: 0.5rem; line-height: 1.4; }
+  .home-discover__form { align-self: stretch; gap: 0.5rem; padding: 0.5rem; }
+  .filter-panel { gap: 0.5rem; }
+  .filter-group { gap: 0.3rem; padding: 0.65rem; }
+  .filter-group__meta { gap: 0.35rem; }
+  .chip { min-height: 2.4rem; }
+  .button--random { min-height: 2.75rem; }
+  .food-poster-slideshow {
+    align-self: end;
+    height: calc(100% - 1.25rem);
+    transform: translateY(-1.25rem);
+  }
+  .food-poster-slideshow__viewport { height: 100%; aspect-ratio: auto; }
 }
 
 @media (max-width: 48rem) {

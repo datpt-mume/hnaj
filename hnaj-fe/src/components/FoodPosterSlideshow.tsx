@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import type { FocusEvent } from 'react'
-import { RiArrowLeftSLine, RiArrowRightSLine } from 'react-icons/ri'
 
 type FoodPosterSlide = {
   src: string
@@ -10,9 +9,9 @@ type FoodPosterSlide = {
 }
 
 const slides: FoodPosterSlide[] = [
-  { src: '/hero_image.png', alt: 'Poster món ăn Việt Nam với tô bún bò Huế', caption: 'Huế / món đậm vị', detail: 'Một chút cay, một chút thương.' },
-  { src: '/hero_image.png', alt: 'Poster Hà Nội với phở và các địa danh thành phố', caption: 'Hà Nội / phở nóng', detail: 'Đi một vòng rồi ghé ăn.' },
-  { src: '/hero_image.png', alt: 'Poster ẩm thực Nam Định với nhiều món ăn địa phương', caption: 'Nam Định / vị quê nhà', detail: 'Món ngon kể chuyện nơi chốn.' },
+  { src: '/food-poster-slide-1.png', alt: 'Poster món ăn Việt Nam với tô bún bò Huế', caption: 'Huế / món đậm vị', detail: 'Một chút cay, một chút thương.' },
+  { src: '/food-poster-slide-2.png', alt: 'Poster Hà Nội với phở và các địa danh thành phố', caption: 'Hà Nội / phở nóng', detail: 'Đi một vòng rồi ghé ăn.' },
+  { src: '/food-poster-slide-3.png', alt: 'Poster ẩm thực Nam Định với nhiều món ăn địa phương', caption: 'Nam Định / vị quê nhà', detail: 'Món ngon kể chuyện nơi chốn.' },
 ]
 
 export function FoodPosterSlideshow() {
@@ -34,14 +33,6 @@ export function FoodPosterSlideshow() {
 
   function goTo(index: number) {
     setActiveIndex(index)
-  }
-
-  function goPrevious() {
-    setActiveIndex((currentIndex) => (currentIndex - 1 + slides.length) % slides.length)
-  }
-
-  function goNext() {
-    setActiveIndex((currentIndex) => (currentIndex + 1) % slides.length)
   }
 
   function handleViewportBlur(event: FocusEvent<HTMLDivElement>) {
@@ -74,23 +65,6 @@ export function FoodPosterSlideshow() {
             }}
           />
 
-          <button
-            className="food-poster-slideshow__control food-poster-slideshow__control--previous"
-            type="button"
-            aria-label="Xem poster trước"
-            onClick={goPrevious}
-          >
-            <RiArrowLeftSLine aria-hidden="true" />
-          </button>
-
-          <button
-            className="food-poster-slideshow__control food-poster-slideshow__control--next"
-            type="button"
-            aria-label="Xem poster tiếp theo"
-            onClick={goNext}
-          >
-            <RiArrowRightSLine aria-hidden="true" />
-          </button>
         </div>
 
         <div className="food-poster-slideshow__caption" aria-live="polite">

@@ -158,7 +158,7 @@ export function HomePage() {
       </nav>
 
       <section className="home-discover" aria-labelledby="discover-title">
-        <div className="home-discover__content">
+        <div className="home-discover__layout">
           <header className="home-discover__header">
             <p className="home-discover__kicker">Hôm nay ăn gì?</p>
             <h1 id="discover-title">Không biết đi đâu hay ăn gì? Đã có <span className="brand-primary-text">Hôm nay ăn gì</span></h1>
@@ -171,24 +171,24 @@ export function HomePage() {
             <FilterPanel filters={filters} onChange={setFilters} />
 
             <div className="home-discover__footer">
-            <Toggle
-              id="open-now"
-              label="Đang mở cửa"
-              hint="Bỏ chọn để xem cả nơi chưa rõ giờ"
-              checked={filters.openNow}
-              onChange={(openNow) => setFilters((current) => ({ ...current, openNow }))}
-            />
-            <div className="home-discover__submit">
-              <button className="button button--flame button--random" type="submit">
-                <RiDiceLine aria-hidden="true" />
-                {hasRolled ? 'Đề xuất địa điểm khác' : 'Đề xuất cho tôi một nơi'}
-              </button>
+              <Toggle
+                id="open-now"
+                label="Đang mở cửa"
+                hint="Bỏ chọn để xem cả nơi chưa rõ giờ"
+                checked={filters.openNow}
+                onChange={(openNow) => setFilters((current) => ({ ...current, openNow }))}
+              />
+              <div className="home-discover__submit">
+                <button className="button button--flame button--random" type="submit">
+                  <RiDiceLine aria-hidden="true" />
+                  {hasRolled ? 'Đề xuất địa điểm khác' : 'Đề xuất cho tôi một nơi'}
+                </button>
+              </div>
             </div>
-          </div>
           </form>
-        </div>
 
-        <FoodPosterSlideshow />
+          <FoodPosterSlideshow />
+        </div>
 
         <RecommendationModal
           open={isResultOpen}
