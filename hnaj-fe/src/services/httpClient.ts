@@ -28,6 +28,11 @@ export class ApiRequestError extends Error {
   }
 }
 
+/** Lấy thông báo lỗi hiển thị: dùng message của ApiRequestError, fallback khi lỗi khác. */
+export function getApiErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof ApiRequestError ? error.message : fallback
+}
+
 type RequestOptions = Omit<RequestInit, 'body'> & {
   body?: unknown
   token?: string | null

@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { AuthShell } from '../components/AuthShell'
 import { clearAuthReturnPath, getAuthReturnPath } from '../services/authReturnPath'
 import { useAuth } from '../hooks/useAuth'
-import { ApiRequestError } from '../services/httpClient'
+import { getApiErrorMessage } from '../services/httpClient'
 import { exchangeGoogleCodeOnce } from '../services/inFlightAuthRequests'
 
 export function GoogleCallbackPage() {
@@ -39,11 +39,7 @@ export function GoogleCallbackPage() {
       } catch (requestError) {
         if (!isActive) return
         setState('error')
-        setMessage(
-          requestError instanceof ApiRequestError
-            ? requestError.message
-            : 'Không thể hoàn tất đăng nhập với Google.',
-        )
+        setMessage(getApiErrorMessage(requestError, 'Không thể hoàn tất đăng nhập với Google.'))
       }
     }
 

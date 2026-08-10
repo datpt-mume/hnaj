@@ -7,7 +7,7 @@ type PriceRangeSliderProps = {
   onChange: (min: number, max: number) => void
 }
 
-function formatVnd(value: number): string {
+function formatBudgetLabel(value: number): string {
   if (value >= 1_000_000) return `${value / 1_000_000} triệu`
   if (value >= 1_000) return `${value / 1_000} nghìn`
   return `${value}đ`
@@ -32,9 +32,9 @@ export function PriceRangeSlider({
           <span className="price-range__hint">Điều chỉnh ngân sách cho chuyến đi</span>
         </div>
         <output className="price-range__output" aria-live="polite">
-          <span>{formatVnd(min)}</span>
+          <span>{formatBudgetLabel(min)}</span>
           <span aria-hidden="true">–</span>
-          <span>{formatVnd(max)}</span>
+          <span>{formatBudgetLabel(max)}</span>
         </output>
       </div>
       <div className="price-range__inputs">

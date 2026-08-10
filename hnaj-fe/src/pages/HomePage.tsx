@@ -12,7 +12,7 @@ import { useAuth } from '../hooks/useAuth'
 import { randomPlace } from '../services/discoveryService'
 import type { DiscoveryFilters, DiscoveryPlace } from '../services/discoveryService'
 import { DEFAULT_MIN_PRICE, DEFAULT_MAX_PRICE } from '../components/FilterPanel'
-import { ApiRequestError } from '../services/httpClient'
+import { getApiErrorMessage } from '../services/httpClient'
 
 const DEFAULT_FILTERS: FilterState = {
   categoryId: null,
@@ -72,11 +72,7 @@ export function HomePage() {
         if (!next) setError('Hãy nới lỏng bộ lọc (bớt tag, mở rộng khoảng giá hoặc đổi khu vực) rồi thử lại.')
       } catch (requestError) {
         setPlace(null)
-        setError(
-          requestError instanceof ApiRequestError
-            ? requestError.message
-            : 'Không thể kết nối máy chủ. Hãy thử lại.',
-        )
+        setError(getApiErrorMessage(requestError, 'Không thể kết nối máy chủ. Hãy thử lại.'))
       } finally {
         setIsLoading(false)
       }

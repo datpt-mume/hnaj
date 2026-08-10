@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { RiMapPin2Line, RiSearchLine } from 'react-icons/ri'
+import { RiSearchLine } from 'react-icons/ri'
 import { AuthNav } from '../components/AuthNav'
 import { EmptyState } from '../components/EmptyState'
+import { SearchResultCard } from '../components/SearchResultCard'
 import { Skeleton } from '../components/Skeleton'
 import { searchPlaces } from '../services/placeSearchService'
 import type { DiscoveryPlace } from '../services/discoveryService'
-import { ApiRequestError } from '../services/httpClient'
+import { getApiErrorMessage } from '../services/httpClient'
 
 const PER_PAGE = 10
 
@@ -57,11 +58,7 @@ export function SearchPage() {
       setTotal(0)
       setLastPage(1)
       setHasSearched(true)
-      setError(
-        requestError instanceof ApiRequestError
-          ? requestError.message
-          : 'Không thể kết nối máy chủ. Hãy thử lại.',
-      )
+      setError(getApiErrorMessage(requestError, 'Không thể kết nối máy chủ. Hãy thử lại.'))
     } finally {
       if (!controller.signal.aborted) {
         setIsLoading(false)
@@ -185,53 +182,5 @@ export function SearchPage() {
         ) : null}
       </section>
     </main>
-  )
-}
-
-function SearchResultCard({ place }: { place: DiscoveryPlace }) {
-  return (
-    <article className="search-result-card">
-      <div className="search-result-card__media">
-        {place.thumbnail ? (
-          <img
-            src={place.thumbnail.image_url}
-            alt={place.thumbnail.alt_text || place.name}
-            loading="lazy"
-            width="320"
-            height="180"
-          />
-        ) : (
-          <div className="search-result-card__placeholder" aria-hidden="true">
-            {place.name.charAt(0)}
-          </div>
-        )}
-      </div>
-      <div className="search-result-card__body">
-        <p className="search-result-card__category">{place.category?.name ?? 'Địa điểm'}</p>
-        <h3 className="search-result-card__name">{place.name}</h3>
-        <p className="search-result-card__address">
-          <RiMapPin2Line aria-hidden="true" />
-          {/* address_text already contains district, city and country. */}
-          <span>{place.address_text}</span>
-        </p>
-        {place.tags.length > 0 ? (
-          <ul className="search-result-card__tags" aria-label="Tags">
-            {place.tags.map((tag) => (
-              <li key={tag.id}>
-                <span className="tag">#{tag.name}</span>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-        <a
-          className="button button--flame search-result-card__navigate"
-          href={place.google_maps_url}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Đi tới đó
-        </a>
-      </div>
-    </article>
   )
 }

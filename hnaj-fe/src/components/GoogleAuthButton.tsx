@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { getGoogleAuthorizationUrl } from '../services/authService'
-import { ApiRequestError } from '../services/httpClient'
+import { getApiErrorMessage } from '../services/httpClient'
 import { setAuthReturnPath } from '../services/authReturnPath'
 
 type GoogleAuthButtonProps = {
@@ -21,11 +21,7 @@ export function GoogleAuthButton({ onError }: GoogleAuthButtonProps) {
       const response = await getGoogleAuthorizationUrl()
       window.location.assign(response.data.authorization_url)
     } catch (requestError) {
-      onError(
-        requestError instanceof ApiRequestError
-          ? requestError.message
-          : 'Không thể kết nối tới máy chủ. Hãy thử lại.',
-      )
+      onError(getApiErrorMessage(requestError, 'Không thể kết nối tới máy chủ. Hãy thử lại.'))
       setIsLoading(false)
     }
   }
