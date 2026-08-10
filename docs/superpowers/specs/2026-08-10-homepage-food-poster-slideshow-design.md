@@ -8,7 +8,11 @@ Refresh the HNAJ homepage so it feels like a living Vietnamese food poster rathe
 
 On desktop, the homepage presents a two-column hero below the existing navigation:
 
-- The left column contains the existing discovery headline, a short supporting line, compact filter pills, and the recommendation CTA.
+- The header uses the existing logo image, never a text-only `HNAJ` wordmark.
+- The header always shows the discovery navigation, but personal links (`Điểm đến yêu thích` and `Lịch sử`) are rendered only for authenticated users.
+- The left column contains the existing discovery headline, the approved supporting copy, compact filter pills, and the recommendation CTA.
+- The supporting copy is exactly: `Dành cho những ngày không muốn suy nghĩ nhiều. Bỏ qua mọi lo toan và hãy để Hôm nay ăn gì quyết định giúp bạn nha`.
+- The slogan/headline keeps its existing content and must not introduce the text `HNAJ`.
 - The right column contains a tall poster-style slideshow with rounded corners, a subtle frame/shadow, caption, pagination dots, and previous/next controls.
 - The visual should feel editorial and warm without putting important text directly on top of the photos.
 
@@ -47,7 +51,7 @@ Create a focused `FoodPosterSlideshow` component responsible only for:
 
 Keep filter state and recommendation request logic in `HomePage`/`FilterPanel`. The slideshow has no dependency on discovery API data. Add a small static slide-definition array near the component with image path, alt text, location/category caption, and optional label.
 
-Update the homepage layout to compose the slideshow with the existing discovery content. Keep routing, authentication navigation, recommendation modal, and filter semantics unchanged.
+Update the homepage layout to compose the slideshow with the existing discovery content. Preserve routing, authentication behavior, recommendation modal, and filter semantics. The header must use the logo asset and conditionally render personal navigation links based on authentication state.
 
 ## Visual system
 
