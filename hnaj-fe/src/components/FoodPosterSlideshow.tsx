@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { FocusEvent } from 'react'
 import { RiArrowLeftSLine, RiArrowRightSLine } from 'react-icons/ri'
 
 type FoodPosterSlide = {
@@ -16,7 +17,9 @@ const slides: FoodPosterSlide[] = [
 
 export function FoodPosterSlideshow() {
   const [activeIndex, setActiveIndex] = useState(0)
-  const [isPaused, setIsPaused] = useState(false)
+  const [isHoverPaused, setIsHoverPaused] = useState(false)
+  const [isFocusPaused, setIsFocusPaused] = useState(false)
+  const isPaused = isHoverPaused || isFocusPaused
   const activeSlide = slides[activeIndex]
 
   useEffect(() => {
@@ -41,15 +44,25 @@ export function FoodPosterSlideshow() {
     setActiveIndex((currentIndex) => (currentIndex + 1) % slides.length)
   }
 
+  function handleViewportBlur(event: FocusEvent<HTMLDivElement>) {
+    const nextFocusedElement = event.relatedTarget
+
+    if (nextFocusedElement instanceof Node && event.currentTarget.contains(nextFocusedElement)) {
+      return
+    }
+
+    setIsFocusPaused(false)
+  }
+
   return (
     <section className="food-poster-slideshow" aria-label="Poster ẩm thực nổi bật">
       <div
         className="food-poster-slideshow__viewport"
         tabIndex={0}
-        onFocus={() => setIsPaused(true)}
-        onBlur={() => setIsPaused(false)}
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
+        onFocus={() => setIsFocusPaused(true)}
+        onBlur={handleViewportBlur}
+        onMouseEnter={() => setIsHoverPaused(true)}
+        onMouseLeave={() => setIsHoverPaused(false)}
       >
         <div className="food-poster-slideshow__frame">
           <img
