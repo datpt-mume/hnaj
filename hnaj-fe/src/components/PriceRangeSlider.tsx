@@ -1,4 +1,5 @@
 import { useId } from 'react'
+import { formatVnd } from '../utils/format'
 
 type PriceRangeSliderProps = {
   min: number
@@ -8,9 +9,7 @@ type PriceRangeSliderProps = {
 }
 
 function formatBudgetLabel(value: number): string {
-  if (value >= 1_000_000) return `${value / 1_000_000} triệu`
-  if (value >= 1_000) return `${value / 1_000} nghìn`
-  return `${value}đ`
+  return `${formatVnd(value)}vnđ`
 }
 
 export function PriceRangeSlider({

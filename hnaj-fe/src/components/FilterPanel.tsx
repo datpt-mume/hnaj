@@ -117,7 +117,13 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
 
       <fieldset className="filter-group filter-group--district filter-surface">
         <legend>Chọn khu vực</legend>
-        <div className="filter-location-choice">
+        <div
+          className={
+            filters.useLocation && filters.location
+              ? 'filter-location-choice filter-location-choice--located'
+              : 'filter-location-choice'
+          }
+        >
           <FormDropdown
             value={filters.districtId}
             options={DISTRICT_OPTIONS}
