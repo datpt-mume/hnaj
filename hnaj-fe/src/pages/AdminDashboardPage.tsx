@@ -9,7 +9,9 @@ export function AdminDashboardPage() {
   return (
     <main className="admin-shell">
       <nav className="home-nav" aria-label="Điều hướng quản trị">
-        <Link className="wordmark" to="/admin">HNAJ / ADMIN</Link>
+        <Link className="wordmark" to="/admin" aria-label="HNAJ - Quản trị">
+          <img src="/logo.png" alt="Hôm nay ăn gì?" />
+        </Link>
         <button className="text-button" type="button" onClick={() => void signOutAdmin()}>
           Đăng xuất admin
         </button>

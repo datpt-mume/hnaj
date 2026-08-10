@@ -5,15 +5,8 @@ namespace App\Repositories;
 use App\Actions\Discovery\DiscoveryContext;
 use App\Actions\Discovery\DiscoveryFilters;
 use App\Actions\Discovery\PlaceScorer;
-use App\Enums\PlaceStatus;
-use App\Enums\ScheduleType;
-use App\Models\Bookmark;
 use App\Models\Place;
-use App\Models\PlaceOpeningHour;
-use App\Models\VisitEvent;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 class PlaceRepository
@@ -36,6 +29,8 @@ class PlaceRepository
 
     public function __construct(
         private readonly PlaceScorer $scorer,
+        private readonly PlaceQuery $query,
+        private readonly PlacePersonalizationRepository $personalization,
     ) {}
 
     /**
@@ -51,265 +46,13 @@ class PlaceRepository
     {
         $filters ??= new DiscoveryFilters;
 
-        $candidateIds = $this->queryCandidateIds($filters);
+        $candidateIds = $this->query->candidateIds($filters);
 
         if ($candidateIds->isEmpty()) {
             return null;
         }
 
         return $this->pickBestId($candidateIds, $filters);
-    }
-
-    /**
-     * Search active places by query tokens (ANY within a token across name,
-     * address, tag name or category name; AND between tokens).
-     *
-     * LIKE %token% — no fulltext ranking yet; adequate for MVP scale.
-     * Sorted by rating DESC then name ASC, page-based pagination
-     * (docs/api-search.md).
-     *
-     * @return LengthAwarePaginator<int, Place>
-     */
-    public function search(string $query, int $perPage = 10, int $page = 1): LengthAwarePaginator
-    {
-        $tokens = preg_split('/\s+/u', trim($query), -1, PREG_SPLIT_NO_EMPTY) ?: [];
-
-        $query = Place::query()
-            ->where('status', PlaceStatus::Active)
-            ->with(['district', 'category', 'tags', 'thumbnail', 'openingHours']);
-
-        foreach ($tokens as $token) {
-            // Escape LIKE wildcards so a literal "%" or "_" in the query does
-            // not widen the match (MySQL default escape char is backslash).
-            $like = '%'.addcslashes($token, '\\%_').'%';
-            $query->where(function ($q) use ($like): void {
-                $q->where('places.name', 'like', $like)
-                    ->orWhere('places.address_text', 'like', $like)
-                    ->orWhereHas('category', fn ($c) => $c->where('categories.name', 'like', $like))
-                    ->orWhereHas('tags', fn ($t) => $t->where('tags.name', 'like', $like));
-            });
-        }
-
-        return $query
-            ->orderBy('places.rating', 'desc')
-            ->orderBy('places.name', 'asc')
-            ->paginate($perPage, ['*'], 'page', $page);
-    }
-
-    /**
-     * @param  array<int, int>  $candidateIds
-     * @return array<int, int>
-     */
-    public function bookmarkedPlaceIds(int $userId, array $candidateIds): array
-    {
-        if ($candidateIds === []) {
-            return [];
-        }
-
-        return Bookmark::query()
-            ->where('user_id', $userId)
-            ->whereIn('place_id', $candidateIds)
-            ->pluck('place_id')
-            ->map(static fn (mixed $id): int => (int) $id)
-            ->all();
-    }
-
-    /**
-     * @param  array<int, int>  $candidateIds
-     * @return array<int, int>
-     */
-    public function visitedPlaceIds(int $userId, array $candidateIds): array
-    {
-        if ($candidateIds === []) {
-            return [];
-        }
-
-        return VisitEvent::query()
-            ->where('user_id', $userId)
-            ->whereIn('place_id', $candidateIds)
-            ->distinct()
-            ->pluck('place_id')
-            ->map(static fn (mixed $id): int => (int) $id)
-            ->all();
-    }
-
-    /**
-     * @return Collection<int, int>
-     */
-    private function queryCandidateIds(DiscoveryFilters $filters): Collection
-    {
-        $query = Place::query()
-            ->where('status', PlaceStatus::Active)
-            ->select('places.id');
-
-        if ($filters->categoryId !== null) {
-            $query->where('places.category_id', $filters->categoryId);
-        }
-
-        if ($filters->districtId !== null) {
-            $query->where('places.district_id', $filters->districtId);
-        }
-
-        if ($filters->minPrice !== null) {
-            $query->where(function ($q) use ($filters): void {
-                $q->whereNull('places.max_price')
-                    ->orWhere('places.max_price', '>=', $filters->minPrice);
-            });
-        }
-
-        if ($filters->maxPrice !== null) {
-            $query->where(function ($q) use ($filters): void {
-                $q->whereNull('places.min_price')
-                    ->orWhere('places.min_price', '<=', $filters->maxPrice);
-            });
-        }
-
-        if ($filters->tagIds !== []) {
-            $query->where(function ($q) use ($filters): void {
-                foreach (array_unique($filters->tagIds) as $tagId) {
-                    $q->whereHas('tags', fn ($tagQ) => $tagQ->where('tags.id', $tagId));
-                }
-            });
-        }
-
-        // excluded_place_ids is no longer a SQL filter: it is a ranking
-        // criterion (PlaceScorer::WEIGHT_NOT_EXCLUDED). A just-shown place is
-        // only demoted and is still selectable as the sole candidate, replacing
-        // the old "re-pick without excluded" fallback.
-
-        // Load all SQL-matching ids (no early cut). An early limit() would make
-        // places beyond the first page never selectable, and report "not found"
-        // while matching places still exist.
-        $ids = $query
-            ->pluck('places.id')
-            ->map(static fn (mixed $id): int => (int) $id);
-
-        return $this->filterDistanceAndOpeningHours($ids, $filters);
-    }
-
-    /**
-     * Filter loaded ids by distance (Haversine) and opening hours in PHP.
-     *
-     * Process in MAX_CANDIDATE_IDS batches to bound memory, but do NOT stop
-     * early: ranking needs every valid candidate to find the best place.
-     *
-     * @param  Collection<int, int>  $ids
-     * @return Collection<int, int>
-     */
-    private function filterDistanceAndOpeningHours(Collection $ids, DiscoveryFilters $filters): Collection
-    {
-        if ($ids->isEmpty() || (! $filters->openNow && $filters->latitude === null)) {
-            return $ids->values();
-        }
-
-        $radius = $filters->latitude !== null
-            ? ($filters->radiusKm ?? 5.0)
-            : null;
-
-        $matched = [];
-
-        foreach ($ids->chunk(self::MAX_CANDIDATE_IDS) as $chunk) {
-            $places = Place::query()
-                ->whereKey($chunk->all())
-                ->with([
-                    'openingHours' => fn ($q) => $q->select('place_id', 'day_of_week', 'schedule_type', 'opens_at', 'closes_at'),
-                ])
-                ->get();
-
-            foreach ($places as $place) {
-                if ($this->matchesOpeningNow($place, $filters)
-                    && $this->withinRadius($place, $filters, $radius)) {
-                    $matched[] = (int) $place->id;
-                }
-            }
-        }
-
-        return new Collection($matched);
-    }
-
-    private function matchesOpeningNow(Place $place, DiscoveryFilters $filters): bool
-    {
-        if (! $filters->openNow) {
-            return true;
-        }
-
-        $hours = $place->openingHours;
-
-        if ($hours->isEmpty()) {
-            // Place chưa có dữ liệu giờ (unknown) vẫn được giữ khi lọc open_now
-            // (docs/prd.md §5.1).
-            return true;
-        }
-
-        // Giờ mở cửa theo quy ước giờ Việt Nam (Asia/Ho_Chi_Minh) của pipeline
-        // import, nên dùng timezone cục bộ thay vì timezone mặc định UTC của app.
-        $now = Carbon::now('Asia/Ho_Chi_Minh');
-        $day = $this->isoDayToStored($now);
-        $time = $now->format('H:i');
-
-        $today = $hours->where('day_of_week', $day);
-
-        if ($today->isEmpty()) {
-            // Không khai báo ngày hôm nay => được hiểu là mở (unknown).
-            return true;
-        }
-
-        return $today->contains(fn (PlaceOpeningHour $slot): bool => $this->slotOpenAt($slot, $time));
-    }
-
-    private function slotOpenAt(PlaceOpeningHour $slot, string $time): bool
-    {
-        if ($slot->schedule_type === ScheduleType::AllDay) {
-            return true;
-        }
-
-        if ($slot->schedule_type === ScheduleType::Closed) {
-            return false;
-        }
-
-        return $slot->opens_at !== null
-            && $slot->closes_at !== null
-            && $time >= $slot->opens_at
-            && $time <= $slot->closes_at;
-    }
-
-    private function withinRadius(Place $place, DiscoveryFilters $filters, ?float $radius): bool
-    {
-        if ($filters->latitude === null || $filters->longitude === null || $radius === null) {
-            return true;
-        }
-
-        $distance = $this->haversineKm(
-            (float) $place->latitude,
-            (float) $place->longitude,
-            $filters->latitude,
-            $filters->longitude,
-        );
-
-        return $distance <= $radius;
-    }
-
-    private function haversineKm(float $lat1, float $lng1, float $lat2, float $lng2): float
-    {
-        $earthRadiusKm = 6371.0;
-        $dLat = deg2rad($lat2 - $lat1);
-        $dLng = deg2rad($lng2 - $lng1);
-
-        $a = sin($dLat / 2) ** 2
-            + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
-
-        return $earthRadiusKm * 2 * atan2(sqrt($a), sqrt(1 - $a));
-    }
-
-    /**
-     * Convert Carbon isoWeekday (1=Mon ... 7=Sun) to the stored convention
-     * (2=Mon ... 8=Sun) used by the import pipeline.
-     */
-    private function isoDayToStored(Carbon $date): int
-    {
-        $isoDay = $date->isoWeekday(); // 1=T2 ... 7=CN
-
-        return $isoDay + 1;
     }
 
     /**
@@ -365,8 +108,8 @@ class PlaceRepository
         $visited = [];
 
         if ($filters->userId !== null) {
-            $bookmarked = $this->bookmarkedPlaceIds($filters->userId, $candidateIds);
-            $visited = $this->visitedPlaceIds($filters->userId, $candidateIds);
+            $bookmarked = $this->personalization->bookmarkedPlaceIds($filters->userId, $candidateIds);
+            $visited = $this->personalization->visitedPlaceIds($filters->userId, $candidateIds);
         }
 
         return new DiscoveryContext(
@@ -387,7 +130,7 @@ class PlaceRepository
             return null;
         }
 
-        return $this->haversineKm(
+        return $this->query->haversineKm(
             (float) $place->latitude,
             (float) $place->longitude,
             $context->latitude,

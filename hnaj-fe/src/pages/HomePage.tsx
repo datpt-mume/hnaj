@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { RiAccountCircleLine, RiDiceLine, RiMapPin2Line } from 'react-icons/ri'
-import { EmptyState } from '../components/EmptyState'
+import { RiDiceLine, RiMapPin2Line } from 'react-icons/ri'
+import { AuthNav } from '../components/AuthNav'
+import FoodPosterSlideshow from '../components/FoodPosterSlideshow'
 import { FilterPanel } from '../components/FilterPanel'
 import type { FilterState } from '../components/FilterPanel'
-import { PlaceCard } from '../components/PlaceCard'
-import { Skeleton } from '../components/Skeleton'
+import { RecommendationModal } from '../components/RecommendationModal'
+import { Toggle } from '../components/Toggle'
 import { useAuth } from '../hooks/useAuth'
 import { randomPlace } from '../services/discoveryService'
 import type { DiscoveryFilters, DiscoveryPlace } from '../services/discoveryService'
@@ -21,10 +22,9 @@ const DEFAULT_FILTERS: FilterState = {
   tagIds: [],
   openNow: true,
   useLocation: false,
+  location: null,
   locationDenied: false,
 }
-
-type LocationRef = { lat: number; lng: number } | null
 
 export function HomePage() {
   const { user } = useAuth()
@@ -36,17 +36,7 @@ export function HomePage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [hasRolled, setHasRolled] = useState(false)
-
-  const locationRef = useRef<LocationRef>(null)
-
-  useEffect(() => {
-    function onLocation(event: Event) {
-      const detail = (event as CustomEvent<{ lat: number; lng: number }>).detail
-      locationRef.current = { lat: detail.lat, lng: detail.lng }
-    }
-    window.addEventListener('hnaj:location', onLocation)
-    return () => window.removeEventListener('hnaj:location', onLocation)
-  }, [])
+  const [isResultOpen, setIsResultOpen] = useState(false)
 
   const buildRequest = useCallback(
     (): DiscoveryFilters => {
@@ -54,13 +44,15 @@ export function HomePage() {
         open_now: filters.openNow,
       }
       if (filters.categoryId !== null) request.category_id = filters.categoryId
-      if (filters.districtId !== null) request.district_id = filters.districtId
+      if (filters.districtId !== null && !filters.useLocation) {
+        request.district_id = filters.districtId
+      }
       if (filters.minPrice > 0) request.min_price = filters.minPrice
       if (filters.maxPrice < DEFAULT_MAX_PRICE) request.max_price = filters.maxPrice
       if (filters.tagIds.length > 0) request.tag_ids = [...filters.tagIds]
-      if (filters.useLocation && locationRef.current) {
-        request.lat = locationRef.current.lat
-        request.lng = locationRef.current.lng
+      if (filters.useLocation && filters.location) {
+        request.lat = filters.location.lat
+        request.lng = filters.location.lng
       }
       return request
     },
@@ -70,12 +62,14 @@ export function HomePage() {
   const runRandom = useCallback(
     async (exclude: number[]) => {
       setIsLoading(true)
+      setIsResultOpen(true)
       setError('')
       try {
         const next = await randomPlace(buildRequest(), exclude)
         setPlace(next)
         setExcluded(next ? [...exclude, next.id] : exclude)
         setHasRolled(true)
+        if (!next) setError('Hãy nới lỏng bộ lọc (bớt tag, mở rộng khoảng giá hoặc đổi khu vực) rồi thử lại.')
       } catch (requestError) {
         setPlace(null)
         setError(
@@ -105,6 +99,15 @@ export function HomePage() {
     // TODO(visit): ghi visit event khi backend có API; hiện chỉ mở Maps.
   }
 
+  function handleDetails() {
+    if (!place) return
+    navigate(`/places/${place.id}`, { state: { place } })
+  }
+
+  function handleCloseResult() {
+    setIsResultOpen(false)
+  }
+
   function handleBookmark() {
     if (!user) {
       navigate('/login', { state: { from: '/' } })
@@ -114,7 +117,7 @@ export function HomePage() {
   }
 
   return (
-    <main className="home-shell" aria-label="Trang chủ HNAJ">
+    <main className="home-shell" aria-label="Trang chủ Hôm nay ăn gì">
       <nav className="home-nav" aria-label="Điều hướng chính">
         <Link className="wordmark" to="/" aria-label="Hôm nay ăn gì? - Trang chủ">
           <img src="/logo.png" alt="Hôm nay ăn gì?" />
@@ -128,9 +131,12 @@ export function HomePage() {
           <Link className="home-nav__link home-nav__link--active" to="/">
             Khám phá
           </Link>
-          <Link className="home-nav__link" to="/bookmarks">Điểm đến yêu thích</Link>
-          <Link className="home-nav__link" to="/history">Lịch sử</Link>
-          <Link className="home-nav__link" to="/suggest">Đề xuất địa điểm</Link>
+          {user ? (
+            <>
+              <Link className="home-nav__link" to="/bookmarks">Điểm đến yêu thích</Link>
+              <Link className="home-nav__link" to="/history">Lịch sử</Link>
+            </>
+          ) : null}
         </div>
         <form
           className="home-search"
@@ -152,91 +158,54 @@ export function HomePage() {
             placeholder="Tìm kiếm địa điểm, món ăn..."
           />
         </form>
-        <Link className="home-account" to={user ? '/account' : '/login'} aria-label="Mở tài khoản">
-          <RiAccountCircleLine aria-hidden="true" />
-          <span>{user ? user.full_name.split(' ').slice(-1)[0] : 'Tài khoản'}</span>
-        </Link>
+        <AuthNav />
       </nav>
 
       <section className="home-discover" aria-labelledby="discover-title">
-        <header className="home-discover__header">
-          <p className="home-discover__kicker">Hôm nay ăn gì?</p>
-          <h1 id="discover-title">Bớt phân vân. Đi thôi.</h1>
-          <p className="home-discover__lead">
-            Chọn vài tiêu chí — hoặc không chọn gì — rồi để chúng tôi đề xuất một nơi
-            hợp ý cho bạn.
-          </p>
-        </header>
+        <div className="home-discover__content">
+          <header className="home-discover__header">
+            <p className="home-discover__kicker">Hôm nay ăn gì?</p>
+            <h1 id="discover-title">Không biết đi đâu hay ăn gì? Đã có <span className="brand-primary-text">Hôm nay ăn gì</span></h1>
+            <p className="home-discover__lead">
+              Dành cho những ngày không muốn suy nghĩ nhiều. Bỏ qua mọi lo toan và hãy để Hôm nay ăn gì quyết định giúp bạn nha
+            </p>
+          </header>
 
-        <form className="home-discover__form" onSubmit={handleRandom}>
-          <FilterPanel filters={filters} onChange={setFilters} />
+          <form className="home-discover__form" onSubmit={handleRandom}>
+            <FilterPanel filters={filters} onChange={setFilters} />
 
-          <div className="home-discover__submit">
-            <button className="button button--flame button--random" type="submit">
-              <RiDiceLine aria-hidden="true" />
-              {hasRolled ? 'Đề xuất địa điểm khác' : 'Đề xuất cho tôi một nơi'}
-            </button>
-          </div>
-        </form>
-
-        <div className="home-discover__result" aria-live="polite" aria-busy={isLoading}>
-          {error ? (
-            <EmptyState
-              title="Không thể tìm được địa điểm."
-              description={error}
-              action={
-                <button className="button button--secondary" type="button" onClick={() => void runRandom(excluded)}>
-                  Thử lại
-                </button>
-              }
+            <div className="home-discover__footer">
+            <Toggle
+              id="open-now"
+              label="Đang mở cửa"
+              hint="Bỏ chọn để xem cả nơi chưa rõ giờ"
+              checked={filters.openNow}
+              onChange={(openNow) => setFilters((current) => ({ ...current, openNow }))}
             />
-          ) : null}
-
-          {isLoading ? (
-            <div className="place-card place-card--loading" aria-hidden="true">
-              <Skeleton className="skeleton--media" />
-              <div className="place-card__body">
-                <Skeleton className="skeleton--line" />
-                <Skeleton className="skeleton--title" />
-                <Skeleton className="skeleton--line" />
-                <Skeleton className="skeleton--title" />
-              </div>
+            <div className="home-discover__submit">
+              <button className="button button--flame button--random" type="submit">
+                <RiDiceLine aria-hidden="true" />
+                {hasRolled ? 'Đề xuất địa điểm khác' : 'Đề xuất cho tôi một nơi'}
+              </button>
             </div>
-          ) : null}
-
-          {!isLoading && !error && place ? (
-            <PlaceCard
-              place={place}
-              onRoll={() => void handleRoll()}
-              onNavigate={handleNavigate}
-              onBookmark={handleBookmark}
-              isRolling={false}
-            />
-          ) : null}
-
-          {!isLoading && !error && hasRolled && !place ? (
-            <EmptyState
-              title="Không tìm thấy địa điểm phù hợp."
-              description="Hãy nới lỏng bộ lọc (bớt tag, mở rộng khoảng giá hoặc đổi khu vực) rồi thử lại."
-              action={
-                <button
-                  className="button button--secondary"
-                  type="button"
-                  onClick={() => void runRandom([])}
-                >
-                  Thử lại với bộ lọc hiện tại
-                </button>
-              }
-            />
-          ) : null}
-
-          {!isLoading && !error && !hasRolled ? (
-            <EmptyState
-              title="Còn trống ở đây."
-              description="Bấm “Random cho tôi một nơi” để nhận đề xuất đầu tiên."
-            />
-          ) : null}
+          </div>
+          </form>
         </div>
+
+        <FoodPosterSlideshow />
+
+        <RecommendationModal
+          open={isResultOpen}
+          place={place}
+          isLoading={isLoading}
+          error={error}
+          onClose={handleCloseResult}
+          onRetry={() => void runRandom(excluded)}
+          onRoll={() => void handleRoll()}
+          onNavigate={handleNavigate}
+          onDetails={handleDetails}
+          onBookmark={handleBookmark}
+        />
       </section>
     </main>
   )

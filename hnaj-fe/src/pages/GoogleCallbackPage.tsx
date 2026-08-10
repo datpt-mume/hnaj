@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { AuthShell } from '../components/AuthShell'
+import { clearAuthReturnPath, getAuthReturnPath } from '../services/authReturnPath'
 import { useAuth } from '../hooks/useAuth'
 import { ApiRequestError } from '../services/httpClient'
 import { exchangeGoogleCodeOnce } from '../services/inFlightAuthRequests'
@@ -32,7 +33,9 @@ export function GoogleCallbackPage() {
         if (!isActive) return
         setState('success')
         acceptUserAuth(response.data)
-        navigate('/account', { replace: true })
+        const destination = getAuthReturnPath() ?? '/account'
+        clearAuthReturnPath()
+        navigate(destination, { replace: true })
       } catch (requestError) {
         if (!isActive) return
         setState('error')

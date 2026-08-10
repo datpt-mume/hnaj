@@ -1,0 +1,5 @@
+{"type":"server-started","port":59379,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:59379/?key=587bbd188fd6da0a177b5028ddec4c7e0637abb0ad74c08c6c36932a587648ea","screen_dir":"/home/dat/workspace/hnaj/.superpowers/brainstorm/3782863-1786322403/content","state_dir":"/home/dat/workspace/hnaj/.superpowers/brainstorm/3782863-1786322403/state","idle_timeout_ms":14400000}
+{"type":"screen-added","file":"/home/dat/workspace/hnaj/.superpowers/brainstorm/3782863-1786322403/content/editorial-layout-options.html"}
+{"type":"screen-added","file":"/home/dat/workspace/hnaj/.superpowers/brainstorm/3782863-1786322403/content/radical-directions-v2.html"}
+{"type":"screen-added","file":"/home/dat/workspace/hnaj/.superpowers/brainstorm/3782863-1786322403/content/homepage-slideshow-preview.html"}
+{"type":"server-stopped","reason":"owner process exited"}

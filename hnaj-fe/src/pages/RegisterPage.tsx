@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { AuthShell } from '../components/AuthShell'
 import { FormField } from '../components/FormField'
+import { GoogleAuthButton } from '../components/GoogleAuthButton'
 import { register } from '../services/authService'
 import { ApiRequestError } from '../services/httpClient'
 
@@ -143,6 +144,12 @@ export function RegisterPage() {
         <button className="button button--primary" type="submit" disabled={isSubmitting}>
           {isSubmitting ? 'Đang tạo tài khoản…' : 'Tạo tài khoản'}
         </button>
+
+        <div className="auth-separator" aria-hidden="true">
+          <span>hoặc</span>
+        </div>
+
+        <GoogleAuthButton onError={setMessage} />
       </form>
 
       <p className="auth-switch">

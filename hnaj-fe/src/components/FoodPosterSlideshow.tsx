@@ -10,9 +10,9 @@ type FoodPosterSlide = {
 }
 
 const slides: FoodPosterSlide[] = [
-  { src: '/food-poster-01.jpg', alt: 'Poster món ăn Việt Nam với tô bún bò Huế', caption: 'Huế / món đậm vị', detail: 'Một chút cay, một chút thương.' },
-  { src: '/food-poster-02.jpg', alt: 'Poster Hà Nội với phở và các địa danh thành phố', caption: 'Hà Nội / phở nóng', detail: 'Đi một vòng rồi ghé ăn.' },
-  { src: '/food-poster-03.jpg', alt: 'Poster ẩm thực Nam Định với nhiều món ăn địa phương', caption: 'Nam Định / vị quê nhà', detail: 'Món ngon kể chuyện nơi chốn.' },
+  { src: '/hero_image.png', alt: 'Poster món ăn Việt Nam với tô bún bò Huế', caption: 'Huế / món đậm vị', detail: 'Một chút cay, một chút thương.' },
+  { src: '/hero_image.png', alt: 'Poster Hà Nội với phở và các địa danh thành phố', caption: 'Hà Nội / phở nóng', detail: 'Đi một vòng rồi ghé ăn.' },
+  { src: '/hero_image.png', alt: 'Poster ẩm thực Nam Định với nhiều món ăn địa phương', caption: 'Nam Định / vị quê nhà', detail: 'Món ngon kể chuyện nơi chốn.' },
 ]
 
 export function FoodPosterSlideshow() {
@@ -69,6 +69,9 @@ export function FoodPosterSlideshow() {
             className="food-poster-slideshow__image"
             src={activeSlide.src}
             alt={activeSlide.alt}
+            onError={(event) => {
+              event.currentTarget.style.opacity = '0'
+            }}
           />
 
           <button
@@ -99,7 +102,7 @@ export function FoodPosterSlideshow() {
           {slides.map((slide, index) => (
             <button
               className="food-poster-slideshow__indicator"
-              key={slide.src}
+              key={slide.caption}
               type="button"
               aria-label={`Xem poster ${index + 1}`}
               aria-current={index === activeIndex ? 'true' : undefined}

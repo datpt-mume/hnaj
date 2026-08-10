@@ -3,8 +3,8 @@
 :root {
   font-family: var(--font-body);
   color: var(--color-ink);
-  background: var(--color-paper);
-  color-scheme: light dark;
+  background: var(--color-cream);
+  color-scheme: light;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -26,7 +26,7 @@ body {
   min-width: 320px;
   min-height: 100dvh;
   margin: 0;
-  background: var(--color-paper);
+  background: var(--color-cream);
   color: var(--color-ink);
 }
 
@@ -44,6 +44,6 @@ img {
 }
 
 ::selection {
-  background: var(--color-accent-soft);
+  background: var(--color-primary-soft);
   color: var(--color-ink);
 }

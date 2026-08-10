@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { RiMapPin2Line, RiSearchLine } from 'react-icons/ri'
+import { AuthNav } from '../components/AuthNav'
 import { EmptyState } from '../components/EmptyState'
 import { Skeleton } from '../components/Skeleton'
 import { searchPlaces } from '../services/placeSearchService'
@@ -102,6 +103,7 @@ export function SearchPage() {
           </button>
         </form>
         <Link className="search-nav__back" to="/">← Về khám phá</Link>
+        <AuthNav />
       </nav>
 
       <section className="search-results" aria-label="Kết quả tìm kiếm">
@@ -209,10 +211,8 @@ function SearchResultCard({ place }: { place: DiscoveryPlace }) {
         <h3 className="search-result-card__name">{place.name}</h3>
         <p className="search-result-card__address">
           <RiMapPin2Line aria-hidden="true" />
-          <span>
-            {place.address_text}
-            {place.district ? `, ${place.district.name}` : ''}
-          </span>
+          {/* address_text already contains district, city and country. */}
+          <span>{place.address_text}</span>
         </p>
         {place.tags.length > 0 ? (
           <ul className="search-result-card__tags" aria-label="Tags">

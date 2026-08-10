@@ -1,0 +1,104 @@
+<h2>Chọn kiểu Editorial cho trang khám phá</h2>
+<p class="subtitle">Cả ba phương án đều sửa lỗi lệch hàng, khoảng trống thừa và control không đồng đều. Hãy chọn phương án có nhịp điệu thị giác hợp với HNAJ nhất.</p>
+
+<style>
+  .direction-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; margin-top:24px; }
+  .direction { cursor:pointer; border:2px solid var(--border,#ddd); border-radius:18px; overflow:hidden; background:#fff; transition:.18s ease; }
+  .direction:hover { transform:translateY(-3px); box-shadow:0 12px 28px rgba(40,25,15,.12); }
+  .direction.selected { border-color:#ea580c; box-shadow:0 0 0 3px rgba(234,88,12,.15); }
+  .preview { min-height:390px; padding:18px; color:#211a16; background:#fff8ee; }
+  .preview * { box-sizing:border-box; }
+  .eyebrow { font:700 8px/1.2 monospace; letter-spacing:.15em; color:#ea580c; text-transform:uppercase; }
+  .headline { margin:8px 0 15px; font:800 25px/1.02 system-ui,sans-serif; letter-spacing:-.045em; }
+  .headline em { color:#ea580c; font-style:normal; }
+  .panel { border:1px solid #e8ded4; border-radius:14px; background:#fff; box-shadow:0 8px 22px rgba(54,35,22,.08); }
+  .field { height:33px; border:1px solid #ddd2c8; border-radius:9px; background:#fff; padding:9px; font:600 8px system-ui; color:#433a35; }
+  .label-mini { margin-bottom:5px; font:800 7px system-ui; color:#514740; }
+  .tags { display:flex; flex-wrap:wrap; gap:5px; }
+  .tag-mini { padding:5px 8px; border:1px solid #dfd4ca; border-radius:999px; font:700 7px system-ui; background:#fff; }
+  .tag-mini.active { color:#fff; border-color:#ea580c; background:#ea580c; }
+  .cta { display:flex; align-items:center; justify-content:center; height:34px; border-radius:9px; background:#ea580c; color:#fff; font:800 9px system-ui; }
+  .card-body { padding:14px; }
+  .card-body h3 { margin:0 0 5px; font-size:16px; }
+  .card-body p { margin:0; font-size:12px; line-height:1.5; color:#70665f; }
+  .badge { display:inline-block; margin-top:8px; padding:4px 7px; border-radius:999px; background:#fff1e5; color:#c2410c; font:800 9px system-ui; }
+
+  .a-panel { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:13px; }
+  .a-wide { grid-column:1/-1; }
+  .a-footer { grid-column:1/-1; display:grid; grid-template-columns:1fr auto; align-items:center; gap:10px; border-top:1px solid #eee3da; padding-top:11px; }
+  .a-toggle { font:700 8px system-ui; }
+  .a-footer .cta { width:125px; }
+
+  .b-preview { background:#fff6e9; }
+  .b-head { display:grid; grid-template-columns:1.2fr .8fr; gap:10px; align-items:end; }
+  .b-note { margin-bottom:16px; padding:9px; border-left:3px solid #ea580c; font:700 8px/1.45 system-ui; color:#71645b; }
+  .b-panel { display:grid; grid-template-columns:.85fr 1.15fr; overflow:hidden; }
+  .b-sidebar { padding:13px; color:#fff; background:#25201d; }
+  .b-sidebar .label-mini { color:#ffbd91; }
+  .b-sidebar .field { margin-bottom:9px; border-color:#514943; color:#fff; background:#352f2b; }
+  .b-main { display:grid; gap:10px; padding:13px; }
+  .b-price { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+
+  .c-preview { background:#f6ede3; }
+  .c-headline { max-width:92%; font-size:28px; }
+  .c-panel { overflow:hidden; border-radius:6px 18px 6px 18px; }
+  .c-top { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:13px; background:#fff; }
+  .c-section { padding:13px; border-top:1px solid #e8ded4; }
+  .c-tags { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; }
+  .c-tags .tag-mini { text-align:center; border-radius:6px; }
+  .c-footer { display:flex; justify-content:space-between; align-items:center; padding:10px 13px; background:#ffdfc2; }
+  .c-footer .cta { width:130px; border-radius:4px 12px 4px 12px; }
+  @media(max-width:900px){ .direction-grid{grid-template-columns:1fr;} .preview{min-height:auto;} }
+</style>
+
+<div class="direction-grid">
+  <div class="direction" data-choice="a" onclick="toggleSelect(this)">
+    <div class="preview">
+      <div class="eyebrow">Hôm nay ăn gì?</div>
+      <div class="headline">Một cú chọn.<br>Một nơi <em>đáng đi.</em></div>
+      <div class="panel a-panel">
+        <div><div class="label-mini">DANH MỤC</div><div class="field">Tất cả danh mục⌄</div></div>
+        <div><div class="label-mini">KHU VỰC</div><div class="field">Toàn Hà Nội⌄</div></div>
+        <div><div class="label-mini">KHOẢNG GIÁ</div><div class="field">0đ — 500 nghìn</div></div>
+        <div><div class="label-mini">VỊ TRÍ</div><div class="field">⌖ Dùng vị trí của tôi</div></div>
+        <div class="a-wide"><div class="label-mini">CHỌN VIBE</div><div class="tags"><span class="tag-mini active">Chill</span><span class="tag-mini">Yên tĩnh</span><span class="tag-mini">Sang trọng</span><span class="tag-mini">Hẹn hò</span></div></div>
+        <div class="a-footer"><span class="a-toggle">● Đang mở cửa</span><div class="cta">⚄ Đề xuất một nơi</div></div>
+      </div>
+    </div>
+    <div class="card-body"><h3>A — Editorial cân bằng</h3><p>Headline mạnh nhưng form vẫn rõ ràng, tất cả control bám cùng grid. Dễ dùng và ít rủi ro nhất.</p><span class="badge">Khuyến nghị</span></div>
+  </div>
+
+  <div class="direction" data-choice="b" onclick="toggleSelect(this)">
+    <div class="preview b-preview">
+      <div class="b-head"><div><div class="eyebrow">HNAJ / HÀ NỘI</div><div class="headline">Đừng nghĩ lâu.<br><em>Đi ăn thôi.</em></div></div><div class="b-note">Bộ lọc như một “menu biên tập”, tương phản mạnh và cá tính hơn.</div></div>
+      <div class="panel b-panel">
+        <div class="b-sidebar">
+          <div class="label-mini">BẮT ĐẦU TỪ ĐÂY</div>
+          <div class="field">Danh mục⌄</div>
+          <div class="field">Quận / huyện⌄</div>
+          <div class="field">⌖ Vị trí của tôi</div>
+        </div>
+        <div class="b-main">
+          <div><div class="label-mini">NGÂN SÁCH</div><div class="b-price"><div class="field">0đ</div><div class="field">500k</div></div></div>
+          <div><div class="label-mini">MOOD HÔM NAY</div><div class="tags"><span class="tag-mini active">Chill</span><span class="tag-mini">Hẹn hò</span><span class="tag-mini">Đi nhóm</span><span class="tag-mini">Gia đình</span></div></div>
+          <div class="cta">⚄ Chọn giúp tôi</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body"><h3>B — Split editorial</h3><p>Cột nền tối tạo dấu ấn thương hiệu rõ. Nổi bật nhất nhưng thay đổi cấu trúc nhiều hơn.</p></div>
+  </div>
+
+  <div class="direction" data-choice="c" onclick="toggleSelect(this)">
+    <div class="preview c-preview">
+      <div class="eyebrow">Hôm nay ăn gì? — 01</div>
+      <div class="headline c-headline">Không biết đi đâu?<br><em>Để tụi mình chọn.</em></div>
+      <div class="panel c-panel">
+        <div class="c-top"><div><div class="label-mini">ĂN GÌ</div><div class="field">Tất cả danh mục⌄</div></div><div><div class="label-mini">Ở ĐÂU</div><div class="field">Toàn Hà Nội⌄</div></div></div>
+        <div class="c-section"><div class="label-mini">KHOẢNG GIÁ</div><div class="field">0đ ━━━━━━━━━ 500k</div></div>
+        <div class="c-section"><div class="label-mini">TAG / VIBE</div><div class="c-tags"><span class="tag-mini active">Chill</span><span class="tag-mini">Yên tĩnh</span><span class="tag-mini">Sang trọng</span><span class="tag-mini">Hẹn hò</span><span class="tag-mini">Đi nhóm</span><span class="tag-mini">Gia đình</span></div></div>
+        <div class="c-footer"><span class="a-toggle">● Mở cửa lúc này</span><div class="cta">⚄ Đề xuất ngay</div></div>
+      </div>
+    </div>
+    <div class="card-body"><h3>C — Magazine blocks</h3><p>Khối vuông, góc bất đối xứng và nhịp giống tạp chí. Cá tính nhất nhưng hơi “design-heavy”.</p></div>
+  </div>
+</div>

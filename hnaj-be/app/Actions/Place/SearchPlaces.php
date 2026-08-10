@@ -2,7 +2,7 @@
 
 namespace App\Actions\Place;
 
-use App\Repositories\PlaceRepository;
+use App\Repositories\PlaceSearchRepository;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
@@ -20,7 +20,7 @@ class SearchPlaces
     public const MAX_QUERY_LENGTH = 100;
 
     public function __construct(
-        private readonly PlaceRepository $places,
+        private readonly PlaceSearchRepository $places,
     ) {}
 
     public function handle(string $query, int $perPage = self::DEFAULT_PER_PAGE, int $page = 1): LengthAwarePaginator

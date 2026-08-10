@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import heroImage from '../assets/hero.png'
 
 type AuthShellProps = {
   title: string
@@ -19,14 +18,16 @@ export function AuthShell({
     <main className={`auth-shell${admin ? ' auth-shell--admin' : ''}`}>
       <section className="auth-brand" aria-label="Giới thiệu HNAJ">
         <Link className="wordmark" to="/" aria-label="HNAJ - Trang chủ">
-          HNAJ
+          <img src="/logo.png" alt="Hôm nay ăn gì?" />
         </Link>
 
         <div className="auth-brand__content">
           <p className="auth-brand__kicker">
             {admin ? 'Khu vực quản trị' : 'Hôm nay ăn gì'}
           </p>
-          <h1>{admin ? 'Quản trị rõ quyền, đúng phạm vi.' : 'Bớt phân vân. Đi ăn thôi.'}</h1>
+          <h1>
+            {admin ? 'Quản trị rõ quyền, đúng phạm vi.' : <>Không biết đi đâu hay ăn gì? Đã có <span className="brand-primary-text">Hôm nay ăn gì</span></>}
+          </h1>
           <p>
             {admin
               ? 'Đăng nhập bằng tài khoản admin được tạo nội bộ. Mọi quyền được kiểm tra lại ở backend.'
@@ -36,7 +37,7 @@ export function AuthShell({
 
         <div className="auth-brand__art" aria-hidden="true">
           <span className="auth-brand__orbit" />
-          <img src={heroImage} alt="" width="343" height="361" />
+          <img src="/hero_image.png" alt="" />
         </div>
       </section>
 

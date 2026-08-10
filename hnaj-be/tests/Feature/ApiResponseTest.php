@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Exceptions\ApiExceptionHandler;
+use RuntimeException;
 use Tests\TestCase;
 
 class ApiResponseTest extends TestCase
@@ -37,5 +39,32 @@ class ApiResponseTest extends TestCase
                 'message' => 'The requested resource was not found.',
                 'code' => 'NOT_FOUND',
             ]);
+    }
+
+    public function test_api_validation_error_returns_error_envelope(): void
+    {
+        $response = $this->postJson('/api/auth/register');
+
+        $response
+            ->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'message' => 'The given data was invalid.',
+                'code' => 'VALIDATION_ERROR',
+            ])
+            ->assertJsonStructure(['errors']);
+    }
+
+    public function test_api_internal_error_returns_generic_envelope(): void
+    {
+        $handler = app(ApiExceptionHandler::class);
+        $response = $handler->render(new RuntimeException('boom'));
+
+        $this->assertSame(500, $response->getStatusCode());
+        $this->assertSame([
+            'success' => false,
+            'message' => 'An unexpected error occurred.',
+            'code' => 'INTERNAL_SERVER_ERROR',
+        ], json_decode($response->getContent(), true));
     }
 }

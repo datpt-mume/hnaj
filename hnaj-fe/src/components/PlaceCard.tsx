@@ -1,10 +1,6 @@
-import { RiBookmarkLine, RiMapPin2Line, RiNavigationFill, RiRefreshLine } from 'react-icons/ri'
+import { RiBookmarkLine, RiEyeLine, RiMapPin2Line, RiNavigationFill, RiRefreshLine } from 'react-icons/ri'
 import type { DiscoveryPlace } from '../services/discoveryService'
-
-function formatVnd(value: number | null): string | null {
-  if (value === null) return null
-  return new Intl.NumberFormat('vi-VN').format(value)
-}
+import { formatVnd } from '../utils/format'
 
 function priceLabel(place: DiscoveryPlace): string | null {
   const min = formatVnd(place.min_price)
@@ -19,6 +15,7 @@ type PlaceCardProps = {
   place: DiscoveryPlace
   onRoll: () => void
   onNavigate: () => void
+  onDetails?: () => void
   onBookmark: () => void
   isRolling: boolean
 }
@@ -27,6 +24,7 @@ export function PlaceCard({
   place,
   onRoll,
   onNavigate,
+  onDetails,
   onBookmark,
   isRolling,
 }: PlaceCardProps) {
@@ -88,6 +86,12 @@ export function PlaceCard({
         ) : null}
 
         <div className="place-card__actions">
+          {onDetails ? (
+            <button className="button button--secondary button--details" type="button" onClick={onDetails}>
+              <RiEyeLine aria-hidden="true" />
+              Xem chi tiết
+            </button>
+          ) : null}
           <button
             className="button button--flame button--navigate"
             type="button"

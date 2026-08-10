@@ -1,37 +1,64 @@
-/* Hallmark tokens: Split Studio, modern-minimal, calm local tone, leaf-green anchor. */
-/* Discovery/food layer (Phase 0): warm cream/ink-warm/teal/flame/sun tokens. */
+/* HNAJ — Unified warm palette (Gen Z, food + entertainment) */
 :root {
-  --color-paper: rgb(239, 220, 188);
-  --color-paper-2: oklch(94.5% 0.018 145);
-  --color-surface: oklch(99% 0.006 145);
-  --color-surface-raised: oklch(100% 0 0);
-  --color-ink: oklch(22% 0.025 145);
-  --color-ink-soft: oklch(39% 0.025 145);
-  --color-muted: oklch(47% 0.022 145);
-  --color-rule: oklch(86% 0.022 145);
-  --color-rule-strong: oklch(72% 0.035 145);
-  --color-accent: oklch(43% 0.105 154);
-  --color-accent-hover: oklch(37% 0.095 154);
-  --color-accent-soft: oklch(92% 0.045 150);
-  --color-accent-ink: oklch(98% 0.008 145);
-  --color-focus: oklch(58% 0.14 150);
-  --color-error: oklch(48% 0.16 28);
-  --color-error-soft: oklch(94% 0.035 28);
-  --color-shadow: oklch(25% 0.04 145 / 0.13);
-  --color-overlay: oklch(18% 0.03 145 / 0.08);
-  /* Warm discovery palette (replaces hard-coded hex in App.css) */
-  --color-cream: #fff7e0;
-  --color-cream-soft: #f7e5b8;
-  --color-ink-warm: #3e2d21;
-  --color-teal: #26786d;
-  --color-teal-deep: #075b56;
-  --color-flame: #d34c22;
-  --color-flame-hover: #b93e1b;
-  --color-sun: #f4c928;
-  --color-on-warm: #fff; /* text on flame/sun when needed */
-  --font-display: "Trebuchet MS", "Aptos Display", sans-serif;
-  --font-body: "Aptos", "Segoe UI", sans-serif;
-  --font-mono: "Cascadia Mono", "SFMono-Regular", monospace;
+  /* Brand & primary */
+  --color-primary: #EA580C;
+  --color-primary-hover: #C2410C;
+  --color-primary-soft: #FFF7ED;
+  --color-primary-ink: #FFFFFF;
+
+  /* Secondary & accent */
+  --color-secondary: #F97316;
+  --color-accent: #2563EB;
+  --color-accent-soft: #DBEAFE;
+  --color-accent-ink: #FFFFFF;
+
+  /* Warm neutrals */
+  --color-cream: #FFF7ED;
+  --color-cream-soft: #FFEDD5;
+  --color-surface: #FFFFFF;
+  --color-surface-raised: #FFFFFF;
+  --color-paper: #FFF7ED;
+  --color-paper-2: #FFEDD5;
+
+  /* Ink */
+  --color-ink: #1C1917;
+  --color-ink-soft: #57534E;
+  --color-muted: #A8A29E;
+  --color-ink-warm: #1C1917;
+
+  /* Rules & borders */
+  --color-rule: #E7E5E4;
+  --color-rule-strong: #D6D3D1;
+  --color-line: #1C1917;
+
+  /* Semantic */
+  --color-success: #16A34A;
+  --color-success-soft: #DCFCE7;
+  --color-error: #DC2626;
+  --color-error-soft: #FEE2E2;
+  --color-focus: #2563EB;
+
+  /* Warm accents */
+  --color-flame: #EA580C;
+  --color-flame-hover: #C2410C;
+  --color-sun: #FBBF24;
+  --color-teal: #2563EB;
+  --color-teal-deep: #1D4ED8;
+  --color-on-warm: #FFFFFF;
+
+  /* Shadows */
+  --color-shadow: rgba(28, 25, 23, 0.08);
+  --color-overlay: rgba(28, 25, 23, 0.04);
+  --shadow-card: 0 8px 24px rgba(28, 25, 23, 0.08);
+  --shadow-soft: 0 4px 12px rgba(28, 25, 23, 0.06);
+  --shadow-lift: 0 12px 32px rgba(28, 25, 23, 0.12);
+
+  /* Typography */
+  --font-display: "Nunito", "Segoe UI", Arial, sans-serif;
+  --font-body: "Nunito", "Segoe UI", Arial, sans-serif;
+  --font-mono: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+
+  /* Spacing */
   --space-2xs: 0.25rem;
   --space-xs: 0.5rem;
   --space-sm: 0.75rem;
@@ -40,6 +67,8 @@
   --space-xl: 2rem;
   --space-2xl: 3rem;
   --space-3xl: 4rem;
+
+  /* Type scale */
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-base: 1rem;
@@ -47,49 +76,21 @@
   --text-lg: 1.5625rem;
   --text-xl: 1.953rem;
   --text-2xl: 2.441rem;
-  --text-display: clamp(2.65rem, 5vw + 0.5rem, 4.8rem);
-  --radius-control: 0.75rem;
-  --radius-card: 1.25rem;
+  --text-display: clamp(2.5rem, 5vw + 0.4rem, 4.4rem);
+
+  /* Radius */
+  --radius-control: 12px;
+  --radius-card: 20px;
   --radius-pill: 999px;
+
+  /* Rules */
   --rule-thin: 1px;
+
+  /* Motion */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
-  --dur-micro: 120ms;
-  --dur-short: 220ms;
-  --dur-long: 420ms;
-  --shadow-card: 0 1.25rem 4rem var(--color-shadow);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-paper: oklch(15% 0.018 145);
-    --color-paper-2: oklch(19% 0.022 145);
-    --color-surface: oklch(18% 0.018 145);
-    --color-surface-raised: oklch(22% 0.02 145);
-    --color-ink: oklch(94% 0.012 145);
-    --color-ink-soft: oklch(81% 0.018 145);
-    --color-muted: oklch(72% 0.018 145);
-    --color-rule: oklch(31% 0.025 145);
-    --color-rule-strong: oklch(46% 0.04 145);
-    --color-accent: oklch(70% 0.12 150);
-    --color-accent-hover: oklch(76% 0.11 150);
-    --color-accent-soft: oklch(27% 0.055 150);
-    --color-accent-ink: oklch(16% 0.025 150);
-    --color-focus: oklch(76% 0.12 150);
-    --color-error: oklch(73% 0.14 28);
-    --color-error-soft: oklch(25% 0.055 28);
-    --color-shadow: oklch(5% 0.01 145 / 0.42);
-    --color-overlay: oklch(5% 0.01 145 / 0.22);
-    /* Warm discovery palette (dark) */
-    --color-cream: oklch(24% 0.02 80);
-    --color-cream-soft: oklch(30% 0.03 80);
-    --color-ink-warm: oklch(92% 0.02 80);
-    --color-teal: oklch(72% 0.09 175);
-    --color-teal-deep: oklch(60% 0.09 175);
-    --color-flame: oklch(72% 0.13 40);
-    --color-flame-hover: oklch(78% 0.12 40);
-    --color-sun: oklch(82% 0.13 90);
-    --color-on-warm: oklch(16% 0.02 40);
-  }
+  --dur-micro: 150ms;
+  --dur-short: 250ms;
+  --dur-long: 400ms;
 }

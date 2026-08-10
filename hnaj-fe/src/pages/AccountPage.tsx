@@ -9,7 +9,9 @@ export function AccountPage() {
   return (
     <main className="account-shell">
       <nav className="home-nav" aria-label="Điều hướng tài khoản">
-        <Link className="wordmark" to="/">HNAJ</Link>
+        <Link className="wordmark" to="/" aria-label="HNAJ - Trang chủ">
+          <img src="/logo.png" alt="Hôm nay ăn gì?" />
+        </Link>
         <button className="text-button" type="button" onClick={() => void signOut()}>
           Đăng xuất
         </button>

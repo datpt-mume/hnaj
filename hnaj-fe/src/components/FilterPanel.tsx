@@ -1,8 +1,15 @@
-import { RiMapPin2Line, RiMotorbikeLine } from 'react-icons/ri'
+import { useState } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
+import { RiArrowLeftSLine, RiArrowRightSLine, RiMapPin2Line, RiMotorbikeLine } from 'react-icons/ri'
 import { CATEGORIES, DISTRICTS, TAGS } from '../services/metaService'
 import { FilterChip } from './FilterChip'
+import { FormDropdown, type FormDropdownOption } from './FormDropdown'
 import { PriceRangeSlider } from './PriceRangeSlider'
-import { Toggle } from './Toggle'
+
+export type LocationCoordinates = {
+  lat: number
+  lng: number
+}
 
 export type FilterState = {
   categoryId: number | null
@@ -12,20 +19,38 @@ export type FilterState = {
   tagIds: number[]
   openNow: boolean
   useLocation: boolean
+  location: LocationCoordinates | null
   locationDenied: boolean
 }
 
 const DEFAULT_MIN_PRICE = 0
 const DEFAULT_MAX_PRICE = 500000
+const TAGS_PER_PAGE = 6
 
 type FilterPanelProps = {
   filters: FilterState
-  onChange: (next: FilterState) => void
+  onChange: Dispatch<SetStateAction<FilterState>>
 }
 
+const DISTRICT_OPTIONS: FormDropdownOption<number | null>[] = [
+  { value: null, label: 'Toàn Hà Nội' },
+  ...DISTRICTS.map((district) => ({ value: district.id, label: district.name })),
+]
+
+const CATEGORY_OPTIONS: FormDropdownOption<number | null>[] = [
+  { value: null, label: 'Tất cả danh mục' },
+  ...CATEGORIES.map((category) => ({ value: category.id, label: category.name })),
+]
+
 export function FilterPanel({ filters, onChange }: FilterPanelProps) {
+  const [isLocationLoading, setIsLocationLoading] = useState(false)
+  const [tagPage, setTagPage] = useState(0)
+  const [tagDirection, setTagDirection] = useState<'previous' | 'next'>('next')
+  const tagPageCount = Math.ceil(TAGS.length / TAGS_PER_PAGE)
+  const visibleTags = TAGS.slice(tagPage * TAGS_PER_PAGE, (tagPage + 1) * TAGS_PER_PAGE)
+
   function patch(p: Partial<FilterState>) {
-    onChange({ ...filters, ...p })
+    onChange((current) => ({ ...current, ...p }))
   }
 
   function toggleTag(id: number) {
@@ -36,10 +61,15 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
   }
 
   async function requestLocation() {
+    if (isLocationLoading) return
+
     if (!('geolocation' in navigator)) {
-      patch({ useLocation: false, locationDenied: true })
+      patch({ useLocation: false, location: null, locationDenied: true })
       return
     }
+
+    setIsLocationLoading(true)
+    patch({ locationDenied: false })
 
     try {
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
@@ -49,70 +79,96 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
         })
       })
       patch({
+        districtId: null,
         useLocation: true,
+        location: {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        },
         locationDenied: false,
       })
-      // Lưu tọa độ để HomePage dùng khi gọi random.
-      window.dispatchEvent(
-        new CustomEvent('hnaj:location', {
-          detail: {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          },
-        }),
-      )
     } catch {
-      patch({ useLocation: false, locationDenied: true })
+      patch({ useLocation: false, location: null, locationDenied: true })
+    } finally {
+      setIsLocationLoading(false)
     }
+  }
+
+  function clearLocation() {
+    patch({ useLocation: false, location: null, locationDenied: false })
+  }
+
+  function changeTagPage(direction: -1 | 1) {
+    setTagDirection(direction > 0 ? 'next' : 'previous')
+    setTagPage((current) => Math.max(0, Math.min(current + direction, tagPageCount - 1)))
   }
 
   return (
     <section className="filter-panel" aria-label="Bộ lọc khám phá">
-      <fieldset className="filter-group">
+      <fieldset className="filter-group filter-group--category filter-surface">
         <legend>Danh mục</legend>
-        <div className="chip-row">
-          <FilterChip
-            id="category-none"
-            label="Tất cả"
-            selected={filters.categoryId === null}
-            onToggle={() => patch({ categoryId: null })}
-          />
-          {CATEGORIES.map((category) => (
-            <FilterChip
-              key={category.id}
-              id={`category-${category.id}`}
-              label={category.name}
-              selected={filters.categoryId === category.id}
-              onToggle={() => patch({ categoryId: category.id })}
-            />
-          ))}
-        </div>
+        <FormDropdown
+          value={filters.categoryId}
+          options={CATEGORY_OPTIONS}
+          label="Chọn danh mục"
+          onChange={(categoryId) => patch({ categoryId })}
+        />
       </fieldset>
 
-      <fieldset className="filter-group">
-        <legend>Quận / huyện</legend>
-        <label className="filter-select">
-          <span className="sr-only">Chọn quận huyện</span>
-          <select
-            value={filters.districtId ?? ''}
-            onChange={(event) =>
+      <fieldset className="filter-group filter-group--district filter-surface">
+        <legend>Chọn khu vực</legend>
+        <div className="filter-location-choice">
+          <FormDropdown
+            value={filters.districtId}
+            options={DISTRICT_OPTIONS}
+            label="Chọn quận / huyện"
+            disabled={filters.useLocation || isLocationLoading}
+            onChange={(districtId) =>
               patch({
-                districtId: event.target.value ? Number(event.target.value) : null,
+                districtId,
+                useLocation: false,
+                location: null,
+                locationDenied: false,
               })
             }
-          >
-            <option value="">Toàn Hà Nội</option>
-            {DISTRICTS.map((district) => (
-              <option key={district.id} value={district.id}>
-                {district.name}
-              </option>
-            ))}
-          </select>
-        </label>
+          />
+          <span className="filter-location-choice__or" aria-hidden="true">hoặc</span>
+          {filters.useLocation && filters.location ? (
+            <div className="filter-location__selected" role="status">
+              <div className="filter-location__details">
+                <RiMapPin2Line aria-hidden="true" />
+                <span>
+                  <strong>Vị trí hiện tại</strong>
+                  <small>Đang được sử dụng</small>
+                </span>
+              </div>
+              <button className="filter-location__clear" type="button" onClick={clearLocation}>
+                Bỏ vị trí
+              </button>
+            </div>
+          ) : (
+            <button
+              className="filter-location"
+              type="button"
+              onClick={() => void requestLocation()}
+              disabled={isLocationLoading}
+              aria-busy={isLocationLoading}
+            >
+              <RiMotorbikeLine aria-hidden="true" />
+              {isLocationLoading ? 'Đang lấy vị trí…' : 'Dùng vị trí của tôi'}
+            </button>
+          )}
+        </div>
+        {filters.locationDenied ? (
+          <p className="filter-hint filter-location__error" role="status">
+            <RiMapPin2Line aria-hidden="true" />
+            Không lấy được vị trí. Bạn có thể chọn quận/huyện hoặc thử lại.
+          </p>
+        ) : null}
       </fieldset>
 
-      <fieldset className="filter-group">
-        <legend>Khoảng giá</legend>
+      <fieldset className="filter-group filter-group--price filter-surface">
+        <legend className="sr-only">Khoảng giá</legend>
         <PriceRangeSlider
           min={filters.minPrice}
           max={filters.maxPrice}
@@ -120,48 +176,50 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
         />
       </fieldset>
 
-      <fieldset className="filter-group">
-        <legend>Tags</legend>
-        <p className="filter-hint">
-          Chọn nhiều tag đồng nghĩa với việc địa điểm phải có đủ tất cả các tag đó.
-        </p>
-        <div className="chip-row">
-          {TAGS.map((tag) => (
-            <FilterChip
-              key={tag.id}
-              id={`tag-${tag.id}`}
-              label={tag.name}
-              selected={filters.tagIds.includes(tag.id)}
-              onToggle={() => toggleTag(tag.id)}
-            />
-          ))}
+      <fieldset className="filter-group filter-group--tags filter-surface">
+        <legend>Sở thích</legend>
+        <div className="filter-group__meta">
+          <p className="filter-hint">
+            Chọn nhiều sở thích để kết quả khớp đủ tất cả lựa chọn của bạn.
+          </p>
+          <div className="chip-slider__controls" aria-label="Điều hướng nhóm sở thích">
+            <button
+              className="chip-slider__button"
+              type="button"
+              onClick={() => changeTagPage(-1)}
+              disabled={tagPage === 0}
+              aria-label="Xem nhóm sở thích trước"
+            >
+              <RiArrowLeftSLine aria-hidden="true" />
+            </button>
+            <span className="chip-slider__status" aria-live="polite">
+              {tagPage + 1} / {tagPageCount}
+            </span>
+            <button
+              className="chip-slider__button"
+              type="button"
+              onClick={() => changeTagPage(1)}
+              disabled={tagPage === tagPageCount - 1}
+              aria-label="Xem nhóm sở thích tiếp"
+            >
+              <RiArrowRightSLine aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+        <div className="chip-slider" aria-label="Nhóm sở thích">
+          <div className={`chip-row chip-row--paged chip-row--${tagDirection}`} key={tagPage} aria-live="polite">
+            {visibleTags.map((tag) => (
+              <FilterChip
+                key={tag.id}
+                id={`tag-${tag.id}`}
+                label={tag.name}
+                selected={filters.tagIds.includes(tag.id)}
+                onToggle={() => toggleTag(tag.id)}
+              />
+            ))}
+          </div>
         </div>
       </fieldset>
-
-      <div className="filter-group filter-group--compact">
-        <Toggle
-          id="open-now"
-          label="Đang mở cửa"
-          hint="Bỏ chọn để xem cả nơi chưa rõ giờ"
-          checked={filters.openNow}
-          onChange={(openNow) => patch({ openNow })}
-        />
-        <button
-          className={`filter-location${filters.useLocation ? ' filter-location--active' : ''}`}
-          type="button"
-          onClick={() => void requestLocation()}
-          aria-pressed={filters.useLocation}
-        >
-          <RiMotorbikeLine aria-hidden="true" />
-          {filters.useLocation ? 'Đang lọc theo vị trí' : 'Dùng vị trí của tôi'}
-        </button>
-        {filters.locationDenied ? (
-          <p className="filter-hint" role="status">
-            <RiMapPin2Line aria-hidden="true" />
-            Không có vị trí — đang lọc theo quận đã chọn.
-          </p>
-        ) : null}
-      </div>
     </section>
   )
 }
