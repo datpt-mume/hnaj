@@ -119,6 +119,8 @@ Không đọc secret thật hoặc dữ liệu nhạy cảm nếu task không b�
 
 Trước mọi thay đổi file hoặc thao tác làm thay đổi trạng thái hệ thống, phải trình bày kế hoạch và chờ người dùng duyệt. Kế hoạch tối thiểu gồm:
 
+Mỗi agent phải duy trì [`plans/project-progress.md`](plans/project-progress.md:1) trong suốt task nếu file tồn tại hoặc task có nhiều bước. Agent phải cập nhật file này khi bắt đầu task, khi chốt quyết định, sau mỗi nhóm thay đổi, sau kiểm chứng và trước bàn giao. Nội dung cập nhật tối thiểu gồm phạm vi, trạng thái, file/khu vực bị ảnh hưởng, blocker, rủi ro và kết quả kiểm chứng. Nếu file chưa tồn tại, agent tạo file trong thư mục `plans/` trước khi triển khai thay đổi lớn.
+
 - Mục tiêu và phạm vi task.
 - Hành vi hiện tại và hành vi mong muốn.
 - Các khu vực/file dự kiến thay đổi.
@@ -420,6 +422,7 @@ Ví dụ loại commit có thể dùng khi phù hợp: `feat`, `fix`, `refactor`
 ### Trước khi đề xuất kế hoạch
 
 - [ ] Đã đọc `AGENTS.md` và yêu cầu mới nhất.
+- [ ] Đã đọc hoặc tạo [`plans/project-progress.md`](plans/project-progress.md:1) và ghi trạng thái khảo sát hiện tại.
 - [ ] Đã kiểm tra `.agents/rules/`, đọc và áp dụng các rule phù hợp.
 - [ ] Đã kiểm tra `.agents/skills/`, đọc đầy đủ và áp dụng các skill phù hợp.
 - [ ] Đã khảo sát file, manifest, config, script và test liên quan.
@@ -431,12 +434,14 @@ Ví dụ loại commit có thể dùng khi phù hợp: `feat`, `fix`, `refactor`
 ### Trước khi sửa
 
 - [ ] Người dùng đã duyệt kế hoạch cụ thể.
+- [ ] [`plans/project-progress.md`](plans/project-progress.md:1) đã ghi phạm vi triển khai và blocker hiện tại.
 - [ ] Không có dependency, destructive action hoặc thay đổi contract chưa được duyệt.
 - [ ] Phạm vi triển khai không vượt kế hoạch.
 
 ### Trước khi bàn giao
 
 - [ ] Diff chỉ chứa thay đổi thuộc task.
+- [ ] [`plans/project-progress.md`](plans/project-progress.md:1) đã ghi trạng thái cuối, kiểm chứng và rủi ro còn lại.
 - [ ] Không có secret, debug code hoặc file sinh ra ngoài ý muốn.
 - [ ] Backend, frontend, API docs và Docker đã đồng bộ khi liên quan.
 - [ ] Nếu có thay đổi UI, đã kiểm tra giao diện thật tại 375px, 768px và 1440px; đã kiểm tra mọi trạng thái liên quan; đã lặp lại sau khi sửa lỗi.

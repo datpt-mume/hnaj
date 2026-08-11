@@ -9,7 +9,7 @@ type PriceRangeSliderProps = {
 }
 
 function formatBudgetLabel(value: number): string {
-  return `${formatVnd(value)}vnđ`
+  return formatVnd(value) ?? ''
 }
 
 export function PriceRangeSlider({

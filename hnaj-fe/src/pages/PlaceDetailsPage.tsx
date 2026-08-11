@@ -4,8 +4,7 @@ import type { DiscoveryPlace } from '../services/discoveryService'
 import { formatVnd } from '../utils/format'
 
 function priceLabel(value: number | null): string | null {
-  const formatted = formatVnd(value)
-  return formatted === null ? null : `${formatted}đ`
+  return formatVnd(value)
 }
 
 export function PlaceDetailsPage() {

@@ -5,9 +5,9 @@ import { formatVnd } from '../utils/format'
 function priceLabel(place: DiscoveryPlace): string | null {
   const min = formatVnd(place.min_price)
   const max = formatVnd(place.max_price)
-  if (min && max) return `${min}đ – ${max}đ`
-  if (min) return `từ ${min}đ`
-  if (max) return `đến ${max}đ`
+  if (min && max) return `${min} – ${max}`
+  if (min) return `từ ${min}`
+  if (max) return `đến ${max}`
   return null
 }
 
