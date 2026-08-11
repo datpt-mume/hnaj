@@ -1,8 +1,13 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\Auth\AdminLoginController;
-use App\Http\Controllers\Api\Place\SearchPlaceController;
 use App\Http\Controllers\Api\Admin\Auth\AdminMeController;
+use App\Http\Controllers\Api\Admin\Place\AdminPlaceDestroyController;
+use App\Http\Controllers\Api\Admin\Place\AdminPlaceShowController;
+use App\Http\Controllers\Api\Admin\Place\AdminPlaceUpdateController;
+use App\Http\Controllers\Api\Admin\Place\AdminPlaceVerificationQueueController;
+use App\Http\Controllers\Api\Admin\Tag\AdminTagStoreController;
+use App\Http\Controllers\Api\Place\SearchPlaceController;
 use App\Http\Controllers\Api\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\Auth\GoogleAuthController;
 use App\Http\Controllers\Api\Auth\LoginController;
@@ -77,5 +82,14 @@ Route::prefix('admin')->group(function (): void {
     Route::middleware(['auth:sanctum', 'role:admin'])->group(function (): void {
         Route::get('/auth/me', AdminMeController::class);
         Route::post('/auth/logout', LogoutController::class);
+
+        Route::post('/tags', AdminTagStoreController::class)->middleware('throttle:30,1');
+
+        Route::prefix('places')->group(function (): void {
+            Route::get('/verification-queue', AdminPlaceVerificationQueueController::class)->middleware('throttle:60,1');
+            Route::get('/{place}', AdminPlaceShowController::class)->middleware('throttle:60,1');
+            Route::patch('/{place}', AdminPlaceUpdateController::class)->middleware('throttle:30,1');
+            Route::delete('/{place}', AdminPlaceDestroyController::class)->middleware('throttle:10,1');
+        });
     });
 });

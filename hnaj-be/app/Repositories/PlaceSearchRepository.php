@@ -21,6 +21,7 @@ class PlaceSearchRepository
 
         $query = Place::query()
             ->where('status', PlaceStatus::Active)
+            ->where('is_verified', true)
             ->with(['district', 'category', 'tags', 'thumbnail', 'openingHours']);
 
         foreach ($tokens as $token) {

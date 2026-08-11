@@ -27,6 +27,7 @@ class PlaceQuery
     {
         $query = Place::query()
             ->where('status', PlaceStatus::Active)
+            ->where('is_verified', true)
             ->select('places.id');
 
         if ($filters->categoryId !== null) {

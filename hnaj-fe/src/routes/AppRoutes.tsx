@@ -4,6 +4,7 @@ import { RequireRole } from '../components/RequireRole'
 import { AccountPage } from '../pages/AccountPage'
 import { AdminDashboardPage } from '../pages/AdminDashboardPage'
 import { AdminLoginPage } from '../pages/AdminLoginPage'
+import { AdminPlaceVerificationPage } from '../pages/AdminPlaceVerificationPage'
 import { GoogleCallbackPage } from '../pages/GoogleCallbackPage'
 import { HomePage } from '../pages/HomePage'
 import { SearchPage } from '../pages/SearchPage'
@@ -30,6 +31,7 @@ export function AppRoutes() {
 
       <Route element={<RequireRole role="admin" />}>
         <Route path="/admin" element={<AdminDashboardPage />} />
+        <Route path="/admin/places/verification" element={<AdminPlaceVerificationPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

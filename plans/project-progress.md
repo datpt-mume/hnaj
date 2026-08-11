@@ -1,7 +1,7 @@
 # Theo dõi tiến độ dự án HNAJ
 
 - **Cập nhật:** 2026-08-11
-- **Trạng thái tổng:** Đã triển khai Taxonomy API; còn blocker kiểm chứng backend và QA UI
+- **Trạng thái tổng:** Đã triển khai MVP admin làm sạch/xác minh Place; còn thiếu regression test chuyên biệt và QA browser 3 viewport
 - **Nguồn nghiệp vụ:** [`docs/prd.md`](../docs/prd.md:1)
 - **Nguồn auth hiện có:** [`docs/api-auth.md`](../docs/api-auth.md:1)
 - **Nguồn response:** [`docs/api-response-contract.md`](../docs/api-response-contract.md:1)
@@ -36,9 +36,9 @@
 | Promotion request | `planned` | Sub-admin tạo/xem/sửa/hủy khi pending; Admin duyệt/từ chối kèm lý do; chưa placement. |
 | Notification center | `planned` | User/Sub-admin/Admin; request, promotion, moderation, account; pagination, realtime, mark-one/read-all, lưu đến người dùng xoá/đánh dấu đã đọc. |
 | Email notifications | `planned` | Kết quả request gửi email; không lộ dữ liệu nhạy cảm. |
-| Admin management | `planned` | User/role, place, taxonomy, request, moderation, reports, dashboard. |
+| Admin management | `in_progress` | Đã có MVP làm sạch Place; các domain quản trị khác vẫn chưa triển khai. |
 | Soft-delete UX | `planned` | Place và nội dung liên quan hiển thị mờ nếu còn truy cập; không thêm/sửa/xóa. |
-| Place hard-delete | `blocked` | Xoá place và toàn bộ bookmark/visit/review/comment/ảnh/history liên quan; cần transaction, FK/cascade và xác nhận destructive. |
+| Place hard-delete | `in_progress` | Đã có endpoint transaction + xác nhận tên; chưa có regression test chuyên biệt cascade/rollback. |
 | Taxonomy delete | `done` | Category/tag/district không xoá; chỉ update/status theo quyết định. |
 | API contract | `in_progress` | Taxonomy discovery đã có contract; các domain còn lại cần hoàn thiện URL, payload, auth, status, pagination, validation, resource. |
 | Frontend integration | `in_progress` | Taxonomy discovery đã nối API; các domain khác chờ contract. |
@@ -101,6 +101,11 @@
 
 ### Đã có implementation/route
 
+- `GET /api/admin/places/verification-queue`
+- `GET /api/admin/places/{place}`
+- `PATCH /api/admin/places/{place}`
+- `DELETE /api/admin/places/{place}`
+
 - `GET /api/test`
 - `POST /api/auth/register`
 - `POST /api/auth/login`
@@ -147,9 +152,55 @@
 - [`docs/api-auth.md`](../docs/api-auth.md:13) chưa có auth Sub-admin.
 - [`hnaj-be/app/Enums/NotificationType.php`](../hnaj-be/app/Enums/NotificationType.php:8) mới có email delivery types, chưa model hóa in-app notification.
 - [`hnaj-be/database/migrations/2026_07_26_000024_create_notification_deliveries_table.php`](../hnaj-be/database/migrations/2026_07_26_000024_create_notification_deliveries_table.php:11) là email delivery log, chưa phải notification center.
-- [`hnaj-be/routes/api.php`](../hnaj-be/routes/api.php:16) hiện mới có auth/discovery/search/test; domain API chưa triển khai.
+
+## Task admin tag create trong verification — đang triển khai
+
+- Phạm vi đã duyệt: thêm API admin `POST /api/admin/tags`, tag mới mặc định active, response qua envelope + `TagResource`; frontend thêm input/nút tạo tag ngay trong phần Tags của màn hình verification và tự chọn tag vừa tạo.
+- Khu vực đã ảnh hưởng: backend routes/controller/request/action/repository/test, docs admin API, frontend admin service/page/CSS.
+- Không thay đổi database schema, dependency, Docker config hoặc breaking API hiện có.
+- Đã triển khai API tạo tag theo luồng `Route → Controller → Action → Repository → Model`; frontend có input `Thêm tag`, loading/validation feedback, tự chọn tag mới và chip selected màu cam primary.
+- Kiểm chứng đạt trong Docker: `docker compose --env-file .env ps`, backend focused test `AdminTagCreateTest` 5 passed/20 assertions, backend full test 166 passed/692 assertions, route list có `POST api/admin/tags`, frontend `npm run lint` 0 lỗi, frontend `npm run build` thành công, `git diff --check` đạt.
+- Đã kiểm chứng UI thật bằng Chromium headless trên route admin verification tại 375px, 768px và 1440px: vùng tag hiển thị đầy đủ, selected chip màu cam kèm dấu chọn, input/nút thêm tag rõ ràng, responsive không có horizontal overflow (`scrollWidth = clientWidth`) ở cả ba viewport.
+- Đã rà soát ảnh chụp: mobile xếp input và nút theo cột, tablet/desktop xếp cùng hàng; danh sách chip wrap đúng, trạng thái selected không chỉ dựa vào màu. Ảnh, browser profile, script và token QA tạm đã được xóa/thu hồi sau kiểm tra.
+
+## Bug admin opening hours — đang sửa
+
+- Phát hiện khi submit Place: frontend gửi Chủ nhật `day_of_week=8` theo dữ liệu lưu trữ, nhưng `UpdateAdminPlaceRequest` đang validate sai `between:0,6`, gây response `422 VALIDATION_ERROR`.
+- Quy ước chuẩn đã được xác minh từ import/discovery/factory: `2=T2 ... 7=T7, 8=CN`.
+- Phạm vi đã duyệt: sửa validation sang `2..8`, chuẩn hóa form frontend theo thứ tự `T2..T7,CN`, thêm regression test đủ 7 ngày và kiểm chứng submit thật. Không migration/dependency/breaking contract.
+- Đã sửa backend validation và frontend mapping bằng cấu hình ngày rõ ràng `T2=2 ... CN=8`; không còn giữ/mix quy ước `0..6` trong form.
+- Regression test mới đạt 2 tests/8 assertions; backend full test đạt 168 tests/700 assertions; frontend lint 0 lỗi và build thành công.
+- Đã kiểm chứng PATCH thật qua Chromium trên Place 14 với `days=[2,3,4,5,6,7,8]`: API trả HTTP 200, `success=true`, response lưu đủ Chủ nhật `day_of_week=8`. Đã thu hồi token, xóa artifact/profile và trả Place 14 về `is_verified=false` sau QA.
+
+## Điều chỉnh UX admin Place verification — đã triển khai, QA browser bị chặn
+
+- Đã hiển thị preview cạnh từng URL ảnh hợp lệ; URL trống/không hợp lệ có placeholder ổn định và preview dùng lazy loading.
+- Đã bỏ nút bỏ chọn thumbnail; dữ liệu cũ thiếu thumbnail tự chọn ảnh đã lưu đầu tiên. Khi xóa thumbnail, form tự chọn ảnh đã lưu khác; nút xóa bị khóa nếu đó là thumbnail duy nhất.
+- Đã thêm nút mở Google Maps bằng liên kết tab mới `target="_blank"` + `rel="noreferrer"`; không gọi service/API visit nên không ghi nhận visited.
+- Khu vực ảnh hưởng: frontend page/CSS và file tiến độ; không thay đổi API, database, dependency hoặc Docker.
+- Kiểm chứng đạt trong Docker: frontend lint 0 lỗi, frontend build thành công, `git diff --check` đạt.
+- QA Chromium 375px/768px/1440px chưa hoàn thành: token admin QA cũ đã hết hiệu lực nên route tự chuyển về `/admin/login`; không tự đọc/tạo credential thật hoặc thay đổi dữ liệu để né auth. Script và ảnh QA tạm của task đã được xóa.
+
+## Đơn giản hóa xác nhận hard-delete Place — đã triển khai, QA browser bị chặn
+
+- Popup frontend chỉ còn nội dung cảnh báo và hai nút Hủy/Xóa vĩnh viễn; đã bỏ ô nhập tên và state liên quan.
+- Đã bỏ `confirm_name` khỏi frontend service, Form Request, controller và action; endpoint DELETE không còn request body.
+- Đây là thay đổi contract có chủ đích đã được người dùng duyệt; endpoint vẫn yêu cầu Bearer token admin, role admin và thao tác xóa vẫn chạy trong transaction.
+- Đã đồng bộ tài liệu API và kế hoạch admin verification; thêm regression test xác nhận admin xóa không cần body và request chưa đăng nhập vẫn bị 401.
+- Kiểm chứng đạt trong Docker: focused test 2 passed/6 assertions; backend full test 170 passed/706 assertions; frontend lint 0 lỗi; frontend build thành công; `git diff --check` đạt.
+- QA modal Chromium 375px/768px/1440px chưa thực hiện được do token admin QA cũ đã hết hiệu lực và route chuyển về `/admin/login`; không tự tạo/sử dụng credential thật để né auth. Không tạo artifact QA mới.
 
 ## Blockers và rủi ro
+
+### Task admin Place verification — kết quả
+
+- Đã thêm migration `is_verified` mặc định `false`; migration đã chạy trong Docker.
+- Public discovery/search lọc `is_verified=true`; factory test mặc định verified để giữ contract test hiện tại, có state `unverified()` cho test queue.
+- Đã thêm admin queue/detail/update/hard-delete, frontend route `/admin/places/verification`, form toàn bộ field, URL images, thumbnail, auto-verify/auto-next.
+- Kiểm chứng đạt: frontend lint, frontend build, backend route list, PHP syntax, backend full test `161 passed (672 assertions)`, `git diff --check`.
+- Chưa kiểm chứng: browser screenshot/interaction tại 375/768/1440 vì môi trường hiện tại không cung cấp browser tool; chưa có regression test chuyên biệt cho 4 endpoint mới.
+- Rủi ro cần xử lý tiếp: bổ sung feature tests admin; kiểm tra thực tế nested comment hard-delete và optimistic locking nếu nhiều admin cùng duyệt.
+
 
 1. Realtime notification chưa có stack/transport trong dependency hoặc Compose; không tự chọn WebSocket/SSE/provider.
 2. Hard-delete cascade có nguy cơ mất dữ liệu; mọi migration/destructive test cần phê duyệt cụ thể.
@@ -159,6 +210,12 @@
 6. Các tài liệu hiện còn mâu thuẫn với quyết định QA mới; cần cập nhật trước implementation.
 
 ## Lịch sử cập nhật
+
+| 2026-08-11 | Đơn giản hóa hard-delete Place: popup chỉ hỏi xác nhận, bỏ ô nhập tên và bỏ `confirm_name` khỏi API. Thêm regression test; backend full 170/706, frontend lint/build và diff check đạt. Browser QA 3 viewport bị chặn do token QA hết hiệu lực. | Phản hồi người dùng + repository |
+| 2026-08-11 | Điều chỉnh admin Place verification: preview URL ảnh, bắt buộc giữ thumbnail, tự chọn thumbnail thay thế khi xóa, thêm liên kết mở Google Maps tab mới không ghi visit. Frontend lint/build và diff check đạt; browser QA 3 viewport bị chặn do token QA hết hiệu lực và route chuyển về admin login; artifact tạm đã xóa. | Phản hồi người dùng + repository |
+| 2026-08-11 | Sửa lỗi admin opening hours 422: đồng bộ quy ước `day_of_week` thành `2..8`, frontend hiển thị `T2..T7,CN`, thêm regression test. Backend full test 168/700, frontend lint/build đạt; PATCH thật qua Chromium trả HTTP 200 với đủ ngày `2..8`; cleanup QA hoàn tất. | Phản hồi người dùng + browser/API QA |
+| 2026-08-11 | Hoàn tất API/UI tạo tag trong admin verification; backend full test 166 passed/692 assertions, frontend lint/build đạt. Chromium headless QA tại 375/768/1440 xác nhận selected chip màu cam, nút thêm tag và responsive không overflow; đã xóa toàn bộ artifact/token QA tạm. | Phản hồi người dùng + browser QA |
+| 2026-08-11 | Triển khai MVP admin Place verification: migration/cờ verified, public filtering, admin API queue/update/hard-delete, frontend slideshow form, URL image management, docs. Migration Docker đạt; backend 161 tests, frontend lint/build, route/PHP syntax và diff check đạt. Browser QA và regression test chuyên biệt còn thiếu. | Trao đổi người dùng + repository |
 
 | Ngày | Thay đổi | Nguồn |
 |---|---|---|

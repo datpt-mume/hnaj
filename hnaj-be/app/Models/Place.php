@@ -32,6 +32,7 @@ class Place extends Model
         'description',
         'thumbnail_image_id',
         'status',
+        'is_verified',
         'created_by',
     ];
 
@@ -42,6 +43,7 @@ class Place extends Model
         'max_price' => 'integer',
         'rating' => 'decimal:1',
         'status' => PlaceStatus::class,
+        'is_verified' => 'boolean',
     ];
 
     public function district(): BelongsTo

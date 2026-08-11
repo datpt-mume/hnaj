@@ -35,6 +35,7 @@ class PlaceFactory extends Factory
             'description' => null,
             'thumbnail_image_id' => null,
             'status' => PlaceStatus::Active,
+            'is_verified' => true,
             'created_by' => null,
         ];
     }
@@ -43,6 +44,20 @@ class PlaceFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'status' => PlaceStatus::Hidden,
+        ]);
+    }
+
+    public function verified(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_verified' => true,
+        ]);
+    }
+
+    public function unverified(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_verified' => false,
         ]);
     }
 
