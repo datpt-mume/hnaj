@@ -1,7 +1,7 @@
 # Theo dõi tiến độ dự án HNAJ
 
 - **Cập nhật:** 2026-08-11
-- **Trạng thái tổng:** Đang chuẩn bị contract API MVP
+- **Trạng thái tổng:** Đã triển khai Taxonomy API; còn blocker kiểm chứng backend và QA UI
 - **Nguồn nghiệp vụ:** [`docs/prd.md`](../docs/prd.md:1)
 - **Nguồn auth hiện có:** [`docs/api-auth.md`](../docs/api-auth.md:1)
 - **Nguồn response:** [`docs/api-response-contract.md`](../docs/api-response-contract.md:1)
@@ -23,6 +23,7 @@
 | Auth Admin | `done` | Admin login, logout, me, bootstrap one-time đã có. |
 | Auth Sub-admin | `planned` | Chưa có login endpoint riêng; cần quyết định dùng auth user chung hay endpoint riêng. |
 | Discovery/search | `done` | Random, search, filter, pagination đang có implementation/test. |
+| Taxonomy discovery | `done` | Đã triển khai `GET /api/meta/discovery`; frontend dùng dữ liệu active từ backend, không còn taxonomy ID hard-code. Lint/build đạt; backend test bị chặn bởi dotenv Compose hiện tại. |
 | Giá hiển thị | `done` | API/DB giữ integer VND; UI thống nhất `vi-VN` + hậu tố `VNĐ` qua `formatVnd`. |
 | Profile | `planned` | Chỉ sửa `full_name`; `username`, `email`, `avatar_url` read-only. |
 | Password recovery/change | `planned` | User/Sub-admin: reset token một lần 24 giờ; đổi cần password hiện tại; đổi xong thu hồi token khác. Admin chỉ đổi nội bộ. |
@@ -39,8 +40,8 @@
 | Soft-delete UX | `planned` | Place và nội dung liên quan hiển thị mờ nếu còn truy cập; không thêm/sửa/xóa. |
 | Place hard-delete | `blocked` | Xoá place và toàn bộ bookmark/visit/review/comment/ảnh/history liên quan; cần transaction, FK/cascade và xác nhận destructive. |
 | Taxonomy delete | `done` | Category/tag/district không xoá; chỉ update/status theo quyết định. |
-| API contract | `in_progress` | Cần hoàn thiện URL, payload, auth, status, pagination, validation, resource. |
-| Frontend integration | `planned` | Chờ contract API. |
+| API contract | `in_progress` | Taxonomy discovery đã có contract; các domain còn lại cần hoàn thiện URL, payload, auth, status, pagination, validation, resource. |
+| Frontend integration | `in_progress` | Taxonomy discovery đã nối API; các domain khác chờ contract. |
 
 ## Quyết định nghiệp vụ đã chốt
 
@@ -116,6 +117,10 @@
 - `POST /api/discovery/random`
 - `GET /api/places/search`
 
+### Đã triển khai gần nhất
+
+- Taxonomy discovery: `GET /api/meta/discovery`; public, read-only, trả category/district/tag active trong một response; không migration, không dependency mới.
+
 ### Cần thiết kế và triển khai MVP
 
 - Profile: `GET/PATCH /api/auth/me`; chỉ `full_name` writable.
@@ -157,6 +162,9 @@
 
 | Ngày | Thay đổi | Nguồn |
 |---|---|---|
+| 2026-08-11 | Đã sửa regression responsive trong recommendation modal: tại mobile, cả ba nút `Xem chi tiết`, `Đi tới đó`, `Roll lại` chuyển thành cột nhưng không còn bị kéo cao bởi `flex-basis` desktop. Lint/build đạt; Chromium đã mở modal và chụp kiểm tra tại 375/768/1440, cả ba nút hiển thị đúng chiều cao và đủ chiều rộng; ảnh tạm đã xóa. | Phản hồi người dùng + browser QA |
+| 2026-08-11 | Hoàn tất Taxonomy API: action/repository/controller/resources/route/test, tài liệu [`docs/api-meta.md`](../docs/api-meta.md:1), hook và frontend filter integration; đã quote `APP_NAME` trong `.env` để sửa lỗi dotenv. Feature test `DiscoveryMetadataTest` đạt 2 tests/15 assertions; frontend lint/build đạt; endpoint browser/API trả HTTP 200. Đã chụp và kiểm tra UI tại 375/768/1440; ảnh tạm đã được xóa sau QA. | Repository |
+| 2026-08-11 | Bắt đầu triển khai Taxonomy API đã duyệt: endpoint gộp metadata discovery, bỏ ID hard-code frontend, thêm test/tài liệu và QA UI ba viewport. Không migration/dependency/breaking change. | Trao đổi người dùng + repository |
 | 2026-08-11 | QA chốt profile, password, user image upload, report/anti-spam, request, notification realtime, admin CRUD/delete, soft/hard-delete, money format. | Trao đổi người dùng |
 | 2026-08-11 | Khảo sát route, model, migration, Compose và manifest hiện có. | Repository |
 | 2026-08-11 | Chuẩn hóa hiển thị tiền: `formatVnd` thêm hậu tố ` VNĐ`; bỏ hậu tố trùng ở PriceRangeSlider/PlaceCard/PlaceDetailsPage; lint+build đạt trong Docker. | Task money format |

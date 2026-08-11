@@ -1714,7 +1714,10 @@
   .recommendation-modal { align-items: end; padding: 0; }
   .recommendation-modal__dialog { width: 100%; max-height: 92dvh; border-radius: var(--radius-card) var(--radius-card) 0 0; padding: var(--space-md); }
   .recommendation-modal .place-card__actions { flex-direction: column; }
-  .recommendation-modal .place-card__actions .button { width: 100%; }
+  .recommendation-modal .place-card__actions .button {
+    width: 100%;
+    flex: 0 0 auto;
+  }
   .chip-row--paged { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 

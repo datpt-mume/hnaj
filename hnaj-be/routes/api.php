@@ -9,11 +9,18 @@ use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
 use App\Http\Controllers\Api\Auth\MeController;
 use App\Http\Controllers\Api\Auth\RegisterController;
+use App\Http\Controllers\Api\Discovery\DiscoveryMetadataController;
 use App\Http\Controllers\Api\Discovery\PlaceDiscoveryController;
 use App\Http\Controllers\Api\TestController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/test', TestController::class);
+
+/*
+ * Metadata công khai cho bộ lọc discovery.
+ */
+Route::get('/meta/discovery', DiscoveryMetadataController::class)
+    ->middleware('throttle:60,1');
 
 /*
  * Khám phá/random địa điểm.

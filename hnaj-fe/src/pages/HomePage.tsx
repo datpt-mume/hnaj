@@ -13,6 +13,7 @@ import { randomPlace } from '../services/discoveryService'
 import type { DiscoveryFilters, DiscoveryPlace } from '../services/discoveryService'
 import { DEFAULT_MIN_PRICE, DEFAULT_MAX_PRICE } from '../components/FilterPanel'
 import { getApiErrorMessage } from '../services/httpClient'
+import { useDiscoveryMetadata } from '../hooks/useDiscoveryMetadata'
 
 const DEFAULT_FILTERS: FilterState = {
   categoryId: null,
@@ -29,6 +30,7 @@ const DEFAULT_FILTERS: FilterState = {
 export function HomePage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const { metadata, isLoading: isMetadataLoading, error: metadataError, retry: retryMetadata } = useDiscoveryMetadata()
 
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS)
   const [place, setPlace] = useState<DiscoveryPlace | null>(null)
@@ -168,7 +170,22 @@ export function HomePage() {
           </header>
 
           <form className="home-discover__form" onSubmit={handleRandom}>
-            <FilterPanel filters={filters} onChange={setFilters} />
+            {metadataError ? (
+              <div className="filter-hint filter-location__error" role="alert">
+                {metadataError}
+                <button className="button button--secondary" type="button" onClick={() => void retryMetadata()}>
+                  Thử lại
+                </button>
+              </div>
+            ) : null}
+            <FilterPanel
+              filters={filters}
+              onChange={setFilters}
+              categories={metadata?.categories ?? []}
+              districts={metadata?.districts ?? []}
+              tags={metadata?.tags ?? []}
+              disabled={isMetadataLoading || Boolean(metadataError)}
+            />
 
             <div className="home-discover__footer">
               <Toggle
@@ -179,7 +196,7 @@ export function HomePage() {
                 onChange={(openNow) => setFilters((current) => ({ ...current, openNow }))}
               />
               <div className="home-discover__submit">
-                <button className="button button--flame button--random" type="submit">
+                <button className="button button--flame button--random" type="submit" disabled={isMetadataLoading}>
                   <RiDiceLine aria-hidden="true" />
                   {hasRolled ? 'Đề xuất địa điểm khác' : 'Đề xuất cho tôi một nơi'}
                 </button>

@@ -9,7 +9,7 @@
         <h1 style="margin:0 0 16px;font-size:20px;line-height:1.3;">Xác thực email của bạn</h1>
 
         <p style="margin:0 0 16px;font-size:15px;line-height:1.6;">
-            Chào {{ $user->name }}, cảm ơn bạn đã đăng ký HNAJ với tên tài khoản
+            Chào {{ $user->name }}, cảm ơn bạn đã đăng ký Hôm nay ăn gì với tên tài khoản
             <strong>{{ $user->username }}</strong>.
         </p>
 

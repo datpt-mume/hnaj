@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import { RiArrowLeftSLine, RiArrowRightSLine, RiMapPin2Line, RiMotorbikeLine } from 'react-icons/ri'
-import { CATEGORIES, DISTRICTS, TAGS } from '../services/metaService'
+import type { FilterCategory, FilterDistrict, FilterTag } from '../services/metaService'
 import { FilterChip } from './FilterChip'
 import { FormDropdown, type FormDropdownOption } from './FormDropdown'
 import { PriceRangeSlider } from './PriceRangeSlider'
@@ -30,24 +30,26 @@ const TAGS_PER_PAGE = 6
 type FilterPanelProps = {
   filters: FilterState
   onChange: Dispatch<SetStateAction<FilterState>>
+  categories: FilterCategory[]
+  districts: FilterDistrict[]
+  tags: FilterTag[]
+  disabled?: boolean
 }
 
-const DISTRICT_OPTIONS: FormDropdownOption<number | null>[] = [
-  { value: null, label: 'Toàn Hà Nội' },
-  ...DISTRICTS.map((district) => ({ value: district.id, label: district.name })),
-]
-
-const CATEGORY_OPTIONS: FormDropdownOption<number | null>[] = [
-  { value: null, label: 'Tất cả danh mục' },
-  ...CATEGORIES.map((category) => ({ value: category.id, label: category.name })),
-]
-
-export function FilterPanel({ filters, onChange }: FilterPanelProps) {
+export function FilterPanel({ filters, onChange, categories, districts, tags, disabled = false }: FilterPanelProps) {
+  const districtOptions: FormDropdownOption<number | null>[] = [
+    { value: null, label: 'Toàn Hà Nội' },
+    ...districts.map((district) => ({ value: district.id, label: district.name })),
+  ]
+  const categoryOptions: FormDropdownOption<number | null>[] = [
+    { value: null, label: 'Tất cả danh mục' },
+    ...categories.map((category) => ({ value: category.id, label: category.name })),
+  ]
   const [isLocationLoading, setIsLocationLoading] = useState(false)
   const [tagPage, setTagPage] = useState(0)
   const [tagDirection, setTagDirection] = useState<'previous' | 'next'>('next')
-  const tagPageCount = Math.ceil(TAGS.length / TAGS_PER_PAGE)
-  const visibleTags = TAGS.slice(tagPage * TAGS_PER_PAGE, (tagPage + 1) * TAGS_PER_PAGE)
+  const tagPageCount = Math.max(1, Math.ceil(tags.length / TAGS_PER_PAGE))
+  const visibleTags = tags.slice(tagPage * TAGS_PER_PAGE, (tagPage + 1) * TAGS_PER_PAGE)
 
   function patch(p: Partial<FilterState>) {
     onChange((current) => ({ ...current, ...p }))
@@ -109,8 +111,9 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
         <legend>Danh mục</legend>
         <FormDropdown
           value={filters.categoryId}
-          options={CATEGORY_OPTIONS}
+          options={categoryOptions}
           label="Chọn danh mục"
+          disabled={disabled}
           onChange={(categoryId) => patch({ categoryId })}
         />
       </fieldset>
@@ -126,9 +129,9 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
         >
           <FormDropdown
             value={filters.districtId}
-            options={DISTRICT_OPTIONS}
+            options={districtOptions}
             label="Chọn quận / huyện"
-            disabled={filters.useLocation || isLocationLoading}
+            disabled={disabled || filters.useLocation || isLocationLoading}
             onChange={(districtId) =>
               patch({
                 districtId,
@@ -157,7 +160,7 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
               className="filter-location"
               type="button"
               onClick={() => void requestLocation()}
-              disabled={isLocationLoading}
+              disabled={disabled || isLocationLoading}
               aria-busy={isLocationLoading}
             >
               <RiMotorbikeLine aria-hidden="true" />
@@ -193,7 +196,7 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
               className="chip-slider__button"
               type="button"
               onClick={() => changeTagPage(-1)}
-              disabled={tagPage === 0}
+              disabled={disabled || tagPage === 0}
               aria-label="Xem nhóm sở thích trước"
             >
               <RiArrowLeftSLine aria-hidden="true" />
@@ -205,7 +208,7 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
               className="chip-slider__button"
               type="button"
               onClick={() => changeTagPage(1)}
-              disabled={tagPage === tagPageCount - 1}
+              disabled={disabled || tagPage === tagPageCount - 1}
               aria-label="Xem nhóm sở thích tiếp"
             >
               <RiArrowRightSLine aria-hidden="true" />
