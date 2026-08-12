@@ -1,7 +1,7 @@
 # Theo dõi tiến độ dự án HNAJ
 
-- **Cập nhật:** 2026-08-11
-- **Trạng thái tổng:** Đã triển khai MVP admin làm sạch/xác minh Place; còn thiếu regression test chuyên biệt và QA browser 3 viewport
+- **Cập nhật:** 2026-08-12
+- **Trạng thái tổng:** Đã xóa các artifact kế hoạch riêng; chỉ giữ file theo dõi tiến độ này và không lưu plan riêng theo từng task
 - **Nguồn nghiệp vụ:** [`docs/prd.md`](../docs/prd.md:1)
 - **Nguồn auth hiện có:** [`docs/api-auth.md`](../docs/api-auth.md:1)
 - **Nguồn response:** [`docs/api-response-contract.md`](../docs/api-response-contract.md:1)
@@ -189,6 +189,13 @@
 - Đã đồng bộ tài liệu API và kế hoạch admin verification; thêm regression test xác nhận admin xóa không cần body và request chưa đăng nhập vẫn bị 401.
 - Kiểm chứng đạt trong Docker: focused test 2 passed/6 assertions; backend full test 170 passed/706 assertions; frontend lint 0 lỗi; frontend build thành công; `git diff --check` đạt.
 - QA modal Chromium 375px/768px/1440px chưa thực hiện được do token admin QA cũ đã hết hiệu lực và route chuyển về `/admin/login`; không tự tạo/sử dụng credential thật để né auth. Không tạo artifact QA mới.
+
+## Quy ước lưu kế hoạch — đã cập nhật
+
+- Đã xóa bốn file plan riêng theo từng task trong [`plans/`](./), chỉ giữ [`plans/project-progress.md`](project-progress.md:1).
+- Đã bổ sung quy tắc vào [`AGENTS.md`](../AGENTS.md:118): kế hoạch vẫn phải trình bày và chờ duyệt trong trao đổi, nhưng không tạo/lưu thêm file plan riêng; tiến độ dài hạn chỉ cập nhật tại file này và tài liệu chính thức thuộc [`docs/`](../docs/).
+- Kiểm chứng: [`plans/`](./) chỉ còn file tiến độ, không còn tham chiếu Markdown đến bốn plan đã xóa và `git diff --check` đạt.
+- Không ảnh hưởng backend, frontend, API, database, Docker hoặc runtime; không cần chạy test/lint/build ứng dụng.
 
 ## Blockers và rủi ro
 

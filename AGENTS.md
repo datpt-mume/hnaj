@@ -117,9 +117,11 @@ Không đọc secret thật hoặc dữ liệu nhạy cảm nếu task không b�
 
 ### 5.2. Lập kế hoạch và chờ duyệt
 
-Trước mọi thay đổi file hoặc thao tác làm thay đổi trạng thái hệ thống, phải trình bày kế hoạch và chờ người dùng duyệt. Kế hoạch tối thiểu gồm:
+Trước mọi thay đổi file hoặc thao tác làm thay đổi trạng thái hệ thống, phải trình bày kế hoạch trong trao đổi và chờ người dùng duyệt. Không tạo hoặc lưu file kế hoạch riêng cho từng task. Tất cả tiến độ dài hạn chỉ được cập nhật trong [`plans/project-progress.md`](plans/project-progress.md:1); tài liệu sản phẩm hoặc kỹ thuật chính thức thuộc phạm vi [`docs/`](docs/).
 
-Mỗi agent phải duy trì [`plans/project-progress.md`](plans/project-progress.md:1) trong suốt task nếu file tồn tại hoặc task có nhiều bước. Agent phải cập nhật file này khi bắt đầu task, khi chốt quyết định, sau mỗi nhóm thay đổi, sau kiểm chứng và trước bàn giao. Nội dung cập nhật tối thiểu gồm phạm vi, trạng thái, file/khu vực bị ảnh hưởng, blocker, rủi ro và kết quả kiểm chứng. Nếu file chưa tồn tại, agent tạo file trong thư mục `plans/` trước khi triển khai thay đổi lớn.
+Mỗi agent phải duy trì [`plans/project-progress.md`](plans/project-progress.md:1) trong suốt task nếu file tồn tại hoặc task có nhiều bước. Agent phải cập nhật file này khi bắt đầu task, khi chốt quyết định, sau mỗi nhóm thay đổi, sau kiểm chứng và trước bàn giao. Nội dung cập nhật tối thiểu gồm phạm vi, trạng thái, file/khu vực bị ảnh hưởng, blocker, rủi ro và kết quả kiểm chứng. Nếu file chưa tồn tại, agent tạo file trong thư mục `plans/` trước khi triển khai thay đổi lớn. Ngoài file này, không thêm file khác vào [`plans/`](plans/).
+
+Kế hoạch tối thiểu gồm:
 
 - Mục tiêu và phạm vi task.
 - Hành vi hiện tại và hành vi mong muốn.
