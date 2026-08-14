@@ -60,6 +60,14 @@ export async function getCurrentAdmin() {
   })
 }
 
+export async function updateProfile(fullName: string) {
+  return apiRequest<{ user: AuthUser }>('/auth/me', {
+    method: 'PATCH',
+    body: { full_name: fullName },
+    token: userTokenStorage.get(),
+  })
+}
+
 export async function logout() {
   return apiRequest<null>('/auth/logout', {
     method: 'POST',

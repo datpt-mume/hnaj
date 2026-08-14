@@ -134,14 +134,51 @@ Action là bootstrap one-time create-only: từ chối nếu hệ thống đã c
 
 Không ghi password thật vào source code, tài liệu, shell history chia sẻ hoặc log.
 
-## 8. Endpoint cần token
+## 8. Cập nhật profile
+
+### `PATCH /api/auth/me`
+
+Cập nhật `full_name` của tài khoản đang đăng nhập. Yêu cầu Sanctum token và role `user` hoặc `sub_admin`.
+
+```json
+{
+  "full_name": "Nguyễn Minh Anh Mới"
+}
+```
+
+- `full_name`: bắt buộc, string, tối đa 255 ký tự, được trim hai đầu.
+- Các trường `username`, `email`, `avatar_url` là read-only và không bị thay đổi bởi request này kể cả khi gửi kèm.
+
+Response HTTP `200`:
+
+```json
+{
+  "success": true,
+  "message": "Profile updated successfully.",
+  "data": {
+    "user": {
+      "id": 1,
+      "username": "minh.anh",
+      "full_name": "Nguyễn Minh Anh Mới",
+      "email": "minh.anh@example.com",
+      "avatar_url": null,
+      "status": "active",
+      "email_verified": true,
+      "roles": ["user"]
+    }
+  }
+}
+```
+
+## 9. Endpoint cần token
 
 - `GET /api/auth/me`: thông tin user hiện tại, yêu cầu Sanctum token và role `user` hoặc `sub_admin`.
+- `PATCH /api/auth/me`: cập nhật `full_name` của user hiện tại, yêu cầu Sanctum token và role `user` hoặc `sub_admin`.
 - `POST /api/auth/logout`: thu hồi token đang dùng.
 - `GET /api/admin/auth/me`: yêu cầu Sanctum token và role `admin`.
 - `POST /api/admin/auth/logout`: yêu cầu Sanctum token và role `admin`, thu hồi token admin đang dùng.
 
-## 9. Mã lỗi auth
+## 10. Mã lỗi auth
 
 | Code | HTTP | Ý nghĩa |
 |---|---:|---|

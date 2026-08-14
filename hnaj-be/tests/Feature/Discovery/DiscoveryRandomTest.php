@@ -150,6 +150,105 @@ class DiscoveryRandomTest extends TestCase
         $this->assertSame($cheap->id, $data['id']);
     }
 
+    public function test_price_filter_excludes_range_too_high(): void
+    {
+        $cheap = $this->createPlace(['name' => 'Rẻ', 'min_price' => 20000, 'max_price' => 50000]);
+        $this->createPlace(['name' => 'Đắt', 'min_price' => 150000, 'max_price' => 200000]);
+
+        $data = $this->randomPlace(['min_price' => 20000, 'max_price' => 100000]);
+
+        $this->assertNotNull($data);
+        $this->assertSame($cheap->id, $data['id']);
+    }
+
+    public function test_price_filter_excludes_range_too_low(): void
+    {
+        $this->createPlace(['name' => 'Rẻ', 'min_price' => 10000, 'max_price' => 30000]);
+        $expensive = $this->createPlace(['name' => 'Đắt', 'min_price' => 150000, 'max_price' => 200000]);
+
+        $data = $this->randomPlace(['min_price' => 100000, 'max_price' => 300000]);
+
+        $this->assertNotNull($data);
+        $this->assertSame($expensive->id, $data['id']);
+    }
+
+    public function test_price_filter_partial_overlap_filter_higher(): void
+    {
+        $place = $this->createPlace(['name' => 'Vừa', 'min_price' => 20000, 'max_price' => 80000]);
+        $this->createPlace(['name' => 'Khác', 'min_price' => 200000, 'max_price' => 300000]);
+
+        $data = $this->randomPlace(['min_price' => 50000, 'max_price' => 150000]);
+
+        $this->assertNotNull($data);
+        $this->assertSame($place->id, $data['id']);
+    }
+
+    public function test_price_filter_partial_overlap_filter_lower(): void
+    {
+        $place = $this->createPlace(['name' => 'Vừa', 'min_price' => 50000, 'max_price' => 150000]);
+        $this->createPlace(['name' => 'Khác', 'min_price' => 200000, 'max_price' => 300000]);
+
+        $data = $this->randomPlace(['min_price' => 20000, 'max_price' => 100000]);
+
+        $this->assertNotNull($data);
+        $this->assertSame($place->id, $data['id']);
+    }
+
+    public function test_price_filter_includes_place_without_price(): void
+    {
+        $noPrice = $this->createPlace(['name' => 'Không giá', 'min_price' => null, 'max_price' => null]);
+        $this->createPlace(['name' => 'Đắt', 'min_price' => 200000, 'max_price' => 300000]);
+
+        $data = $this->randomPlace(['min_price' => 50000, 'max_price' => 100000]);
+
+        $this->assertNotNull($data);
+        $this->assertSame($noPrice->id, $data['id']);
+    }
+
+    public function test_price_filter_includes_place_with_only_min_price(): void
+    {
+        $onlyMin = $this->createPlace(['name' => 'Chỉ min', 'min_price' => 50000, 'max_price' => null]);
+        $this->createPlace(['name' => 'Đắt', 'min_price' => 200000, 'max_price' => 300000]);
+
+        $data = $this->randomPlace(['min_price' => 20000, 'max_price' => 100000]);
+
+        $this->assertNotNull($data);
+        $this->assertSame($onlyMin->id, $data['id']);
+    }
+
+    public function test_price_filter_includes_place_with_only_max_price(): void
+    {
+        $onlyMax = $this->createPlace(['name' => 'Chỉ max', 'min_price' => null, 'max_price' => 80000]);
+        $this->createPlace(['name' => 'Đắt', 'min_price' => 200000, 'max_price' => 300000]);
+
+        $data = $this->randomPlace(['min_price' => 50000, 'max_price' => 150000]);
+
+        $this->assertNotNull($data);
+        $this->assertSame($onlyMax->id, $data['id']);
+    }
+
+    public function test_price_filter_with_only_min_price(): void
+    {
+        $mid = $this->createPlace(['name' => 'Vừa', 'min_price' => 60000, 'max_price' => 100000]);
+        $this->createPlace(['name' => 'Rẻ', 'min_price' => 10000, 'max_price' => 30000]);
+
+        $data = $this->randomPlace(['min_price' => 50000]);
+
+        $this->assertNotNull($data);
+        $this->assertSame($mid->id, $data['id']);
+    }
+
+    public function test_price_filter_with_only_max_price(): void
+    {
+        $cheap = $this->createPlace(['name' => 'Rẻ', 'min_price' => 20000, 'max_price' => 50000]);
+        $this->createPlace(['name' => 'Đắt', 'min_price' => 150000, 'max_price' => 200000]);
+
+        $data = $this->randomPlace(['max_price' => 100000]);
+
+        $this->assertNotNull($data);
+        $this->assertSame($cheap->id, $data['id']);
+    }
+
     public function test_filters_by_tags_requires_all_selected(): void
     {
         $placeBoth = $this->createPlace(['name' => 'Cả hai tag']);

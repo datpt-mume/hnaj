@@ -25,7 +25,7 @@
 | Discovery/search | `done` | Random, search, filter, pagination đang có implementation/test. |
 | Taxonomy discovery | `done` | Đã triển khai `GET /api/meta/discovery`; frontend dùng dữ liệu active từ backend, không còn taxonomy ID hard-code. Lint/build đạt; backend test bị chặn bởi dotenv Compose hiện tại. |
 | Giá hiển thị | `done` | API/DB giữ integer VND; UI thống nhất `vi-VN` + hậu tố `VNĐ` qua `formatVnd`. |
-| Profile | `planned` | Chỉ sửa `full_name`; `username`, `email`, `avatar_url` read-only. |
+| Profile | `done` | Chỉ sửa `full_name`; `username`, `email`, `avatar_url` read-only. `PATCH /api/auth/me` + UI trang `/account`. |
 | Password recovery/change | `planned` | User/Sub-admin: reset token một lần 24 giờ; đổi cần password hiện tại; đổi xong thu hồi token khác. Admin chỉ đổi nội bộ. |
 | Bookmark/visit/history | `planned` | Nghiệp vụ đã chốt, route/API domain chưa có. |
 | Review/comment | `planned` | User đăng nhập; review cần visit, một review/place; comment nhiều; reply theo quyền. |
@@ -163,6 +163,16 @@
 - [`hnaj-be/app/Enums/NotificationType.php`](../hnaj-be/app/Enums/NotificationType.php:8) mới có email delivery types, chưa model hóa in-app notification.
 - [`hnaj-be/database/migrations/2026_07_26_000024_create_notification_deliveries_table.php`](../hnaj-be/database/migrations/2026_07_26_000024_create_notification_deliveries_table.php:11) là email delivery log, chưa phải notification center.
 
+## Task Profile — đã hoàn thành
+
+- Phạm vi đã duyệt: thêm API `PATCH /api/auth/me` chỉ cập nhật `full_name` (writable); `username`, `email`, `avatar_url` read-only theo quyết định [mục Account](#quyết-định-nghiệp-vụ-đã-chốt). User/Sub-admin dùng chung endpoint; trả `{ user: UserResource }` theo envelope chung.
+- Khu vực ảnh hưởng: backend routes/request/action/controller/repository/test, docs API auth, frontend service/context/page/CSS.
+- Không migration, không dependency, không đổi Docker config, không breaking contract (endpoint mới bổ sung).
+- Đã triển khai: `UpdateProfileRequest` (`full_name` required, string, max 255, trim), `UpdateProfile` action (dùng `UserRepository::update` + `loadRoles`), `UpdateProfileController` (envelope success), route `PATCH /api/auth/me` với `role:user,sub_admin`; frontend thêm `updateProfile` service, context `updateProfile` cập nhật user state, trang `/account` có form đổi tên (loading/success/error), CSS cho `.account-form` và `.form-success`.
+- Đã sửa finding review: bỏ import PHP không dùng, test xác nhận `avatar_url` read-only, đồng bộ input `fullName` khi user state đổi, xóa heading tài liệu bị trùng.
+- Kiểm chứng trước vòng sửa trong Docker Compose: backend focused `UpdateProfileTest` 7 passed/26 assertions; backend full test 201 passed/811 assertions; frontend `npm run lint` 0 lỗi; frontend `npm run build` (tsc type check + vite) thành công; `git diff --check` đạt. Cần chạy lại sau vòng sửa.
+- Ghi chú: trước task, workspace đã có thay đổi ngoài phạm vi là `hnaj-be/app/Repositories/PlaceQuery.php` và `hnaj-be/tests/Feature/Discovery/DiscoveryRandomTest.php`; giữ nguyên theo phê duyệt. Browser QA tại 375/768/1440 chưa thực hiện trong vòng này (môi trường không có browser tool).
+
 ## Task admin tag create trong verification — đang triển khai
 
 - Phạm vi đã duyệt: thêm API admin `POST /api/admin/tags`, tag mới mặc định active, response qua envelope + `TagResource`; frontend thêm input/nút tạo tag ngay trong phần Tags của màn hình verification và tự chọn tag vừa tạo.
@@ -241,6 +251,7 @@
 
 ## Lịch sử cập nhật
 
+| 2026-08-14 | Sửa findings review Profile: bỏ import thừa, bảo vệ `avatar_url` read-only bằng regression assertion, đồng bộ input `fullName` theo auth state, sửa heading API auth trùng. Focused test 7 passed/27 assertions, full backend test đạt, frontend lint/build đạt, `git diff --check` đạt. Hai file Discovery ngoài scope được giữ nguyên theo phê duyệt; browser QA Profile chưa thực hiện vì môi trường không cung cấp browser tool. | Phản hồi người dùng + repository |
 | 2026-08-14 | Hoàn tất rà soát task Admin CRUD Places + Sub-admin: bỏ frontend dependency vào `next_unverified_id`, xác nhận CSS không có conflict thực tế, migration đã `Ran` trong Docker Compose, backend 185/749, frontend lint/build và diff check đạt. Browser QA ba viewport chưa thực hiện trong vòng này. | Phản hồi người dùng + repository |
 | 2026-08-11 | Đơn giản hóa hard-delete Place: popup chỉ hỏi xác nhận, bỏ ô nhập tên và bỏ `confirm_name` khỏi API. Thêm regression test; backend full 170/706, frontend lint/build và diff check đạt. Browser QA 3 viewport bị chặn do token QA hết hiệu lực. | Phản hồi người dùng + repository |
 | 2026-08-11 | Điều chỉnh admin Place verification: preview URL ảnh, bắt buộc giữ thumbnail, tự chọn thumbnail thay thế khi xóa, thêm liên kết mở Google Maps tab mới không ghi visit. Frontend lint/build và diff check đạt; browser QA 3 viewport bị chặn do token QA hết hiệu lực và route chuyển về admin login; artifact tạm đã xóa. | Phản hồi người dùng + repository |

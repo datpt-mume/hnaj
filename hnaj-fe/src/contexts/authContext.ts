@@ -11,6 +11,7 @@ export type AuthContextValue = {
   signOut: () => Promise<void>
   signOutAdmin: () => Promise<void>
   acceptUserAuth: (result: AuthResult) => void
+  updateProfile: (fullName: string) => Promise<AuthUser>
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null)

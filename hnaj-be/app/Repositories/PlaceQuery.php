@@ -38,14 +38,22 @@ class PlaceQuery
             $query->where('places.district_id', $filters->districtId);
         }
 
-        if ($filters->minPrice !== null) {
+        if ($filters->minPrice !== null && $filters->maxPrice !== null) {
+            $query->where(function ($q) use ($filters): void {
+                $q->where(function ($range) use ($filters): void {
+                    $range->whereNotNull('places.min_price')
+                        ->whereNotNull('places.max_price')
+                        ->where('places.max_price', '>=', $filters->minPrice)
+                        ->where('places.min_price', '<=', $filters->maxPrice);
+                })->orWhereNull('places.min_price')
+                  ->orWhereNull('places.max_price');
+            });
+        } elseif ($filters->minPrice !== null) {
             $query->where(function ($q) use ($filters): void {
                 $q->whereNull('places.max_price')
                     ->orWhere('places.max_price', '>=', $filters->minPrice);
             });
-        }
-
-        if ($filters->maxPrice !== null) {
+        } elseif ($filters->maxPrice !== null) {
             $query->where(function ($q) use ($filters): void {
                 $q->whereNull('places.min_price')
                     ->orWhere('places.min_price', '<=', $filters->maxPrice);

@@ -7,6 +7,7 @@ import {
   loginAdmin,
   logout,
   logoutAdmin,
+  updateProfile,
 } from '../services/authService'
 import type { AuthResult, AuthUser } from '../services/authService'
 import { adminTokenStorage, userTokenStorage } from '../services/tokenStorage'
@@ -98,6 +99,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const updateUserProfile = useCallback(async (fullName: string) => {
+    const response = await updateProfile(fullName)
+    setUser(response.data.user)
+    return response.data.user
+  }, [])
+
   const value = useMemo(
     () => ({
       user,
@@ -109,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signOut,
       signOutAdmin,
       acceptUserAuth,
+      updateProfile: updateUserProfile,
     }),
     [
       user,
@@ -120,6 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signOut,
       signOutAdmin,
       acceptUserAuth,
+      updateUserProfile,
     ],
   )
 

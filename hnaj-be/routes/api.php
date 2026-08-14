@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
 use App\Http\Controllers\Api\Auth\MeController;
 use App\Http\Controllers\Api\Auth\RegisterController;
+use App\Http\Controllers\Api\Auth\UpdateProfileController;
 use App\Http\Controllers\Api\Discovery\DiscoveryMetadataController;
 use App\Http\Controllers\Api\Discovery\PlaceDiscoveryController;
 use App\Http\Controllers\Api\TestController;
@@ -81,6 +82,7 @@ Route::prefix('auth')->group(function (): void {
 
     Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/me', MeController::class)->middleware('role:user,sub_admin');
+        Route::patch('/me', UpdateProfileController::class)->middleware('role:user,sub_admin');
         Route::post('/logout', LogoutController::class);
     });
 });
