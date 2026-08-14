@@ -8,10 +8,10 @@ use Tests\Feature\Auth\AuthTestCase;
 
 class AdminPlaceDeleteTest extends AuthTestCase
 {
-    public function test_admin_can_hard_delete_place_without_request_body(): void
+    public function test_admin_can_soft_delete_place(): void
     {
         $admin = $this->createUserWithRole(RoleName::Admin);
-        $place = Place::factory()->unverified()->create();
+        $place = Place::factory()->verified()->create();
 
         $this->actingAs($admin, 'sanctum')
             ->deleteJson('/api/admin/places/'.$place->id)
@@ -19,12 +19,12 @@ class AdminPlaceDeleteTest extends AuthTestCase
             ->assertJsonPath('success', true)
             ->assertJsonPath('message', 'Đã xóa địa điểm.');
 
-        $this->assertDatabaseMissing('places', ['id' => $place->id]);
+        $this->assertSoftDeleted('places', ['id' => $place->id]);
     }
 
-    public function test_hard_delete_still_requires_admin_authorization(): void
+    public function test_soft_delete_still_requires_admin_authorization(): void
     {
-        $place = Place::factory()->unverified()->create();
+        $place = Place::factory()->verified()->create();
 
         $this->deleteJson('/api/admin/places/'.$place->id)
             ->assertUnauthorized();

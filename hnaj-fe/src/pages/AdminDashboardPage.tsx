@@ -24,8 +24,14 @@ export function AdminDashboardPage() {
           {adminUser.roles.map((role) => <span key={role}>{role}</span>)}
         </div>
         <div className="admin-dashboard-actions">
-          <Link className="button button--primary button--link" to="/admin/places/verification">
+          <Link className="button button--primary button--link" to="/admin/places">
+            Quản lý Places
+          </Link>
+          <Link className="button button--secondary button--link" to="/admin/places/verification">
             Kiểm duyệt Places
+          </Link>
+          <Link className="button button--secondary button--link" to="/admin/manager-applications">
+            Đơn xin Sub-admin
           </Link>
           <Link className="button button--secondary button--link" to="/">
             Về trang chính

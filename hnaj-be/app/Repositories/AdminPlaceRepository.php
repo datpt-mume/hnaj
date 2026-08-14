@@ -73,4 +73,51 @@ class AdminPlaceRepository
     {
         return Place::query()->where('is_verified', false)->orderBy('id')->get(['id']);
     }
+
+    /**
+     * Danh sách toàn bộ place cho admin, bao gồm cả place đã xóa mềm khi cần.
+     *
+     * @param  array<string, mixed>  $filters
+     * @return LengthAwarePaginator<int, Place>
+     */
+    public function listAll(array $filters, int $perPage, int $page): LengthAwarePaginator
+    {
+        $query = Place::query()
+            ->with(['district', 'category', 'tags', 'thumbnail', 'images', 'openingHours'])
+            ->orderBy('id', 'asc');
+
+        if (! empty($filters['with_trashed']) && filter_var($filters['with_trashed'], FILTER_VALIDATE_BOOL)) {
+            $query->withTrashed();
+        }
+
+        if (! empty($filters['q'])) {
+            $like = '%'.addcslashes($filters['q'], '\\%_').'%';
+            $query->where(function ($q) use ($like): void {
+                $q->where('name', 'like', $like)
+                    ->orWhere('address_text', 'like', $like);
+            });
+        }
+
+        if (! empty($filters['district_id'])) {
+            $query->where('district_id', $filters['district_id']);
+        }
+
+        if (! empty($filters['category_id'])) {
+            $query->where('category_id', $filters['category_id']);
+        }
+
+        if (! empty($filters['tag_id'])) {
+            $query->whereHas('tags', fn ($q) => $q->where('tags.id', $filters['tag_id']));
+        }
+
+        if (array_key_exists('is_verified', $filters) && $filters['is_verified'] !== '' && $filters['is_verified'] !== null) {
+            $query->where('is_verified', filter_var($filters['is_verified'], FILTER_VALIDATE_BOOL));
+        }
+
+        if (! empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        return $query->paginate($perPage, ['*'], 'page', $page);
+    }
 }

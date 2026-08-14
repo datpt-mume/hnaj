@@ -21,7 +21,7 @@
 | Docker/bootstrap | `done` | Compose có backend, backend-web, frontend, MySQL. |
 | Auth User | `done` | Register, email verification, login, logout, me, Google OAuth đã có route/implementation. |
 | Auth Admin | `done` | Admin login, logout, me, bootstrap one-time đã có. |
-| Auth Sub-admin | `planned` | Chưa có login endpoint riêng; cần quyết định dùng auth user chung hay endpoint riêng. |
+| Auth Sub-admin | `done` | Dùng chung `/api/auth/login` và `/api/auth/me` với role `user` hoặc `sub_admin`; tài khoản Sub-admin kích hoạt qua token setup. |
 | Discovery/search | `done` | Random, search, filter, pagination đang có implementation/test. |
 | Taxonomy discovery | `done` | Đã triển khai `GET /api/meta/discovery`; frontend dùng dữ liệu active từ backend, không còn taxonomy ID hard-code. Lint/build đạt; backend test bị chặn bởi dotenv Compose hiện tại. |
 | Giá hiển thị | `done` | API/DB giữ integer VND; UI thống nhất `vi-VN` + hậu tố `VNĐ` qua `formatVnd`. |
@@ -32,13 +32,13 @@
 | User content images | `planned` | Tối đa 5 ảnh/nội dung, 5 MB/ảnh, JPEG/PNG/WebP; hiển thị ngay; Admin ẩn/gỡ sau. |
 | Report/moderation | `planned` | Report review/comment/ảnh; lý do cố định; một report mở/User/nội dung; Admin pending → dismissed/actioned. |
 | Place request | `planned` | Người gửi xem/sửa/hủy khi pending; Admin duyệt/từ chối kèm lý do. |
-| Manager application | `planned` | Duyệt place + role rồi mới tạo User/Sub-admin và setup password. |
+| Manager application | `done` | User có thể xin quản lý place hiện hữu; Admin approve/reject; assignment và role được xử lý trong transaction. |
 | Promotion request | `planned` | Sub-admin tạo/xem/sửa/hủy khi pending; Admin duyệt/từ chối kèm lý do; chưa placement. |
 | Notification center | `planned` | User/Sub-admin/Admin; request, promotion, moderation, account; pagination, realtime, mark-one/read-all, lưu đến người dùng xoá/đánh dấu đã đọc. |
 | Email notifications | `planned` | Kết quả request gửi email; không lộ dữ liệu nhạy cảm. |
-| Admin management | `in_progress` | Đã có MVP làm sạch Place; các domain quản trị khác vẫn chưa triển khai. |
-| Soft-delete UX | `planned` | Place và nội dung liên quan hiển thị mờ nếu còn truy cập; không thêm/sửa/xóa. |
-| Place hard-delete | `in_progress` | Đã có endpoint transaction + xác nhận tên; chưa có regression test chuyên biệt cascade/rollback. |
+| Admin management | `done` | Đã có MVP quản lý Place, cấp/thu hồi Sub-admin và xử lý manager application. |
+| Soft-delete UX | `in_progress` | Admin Place đã chuyển sang soft-delete; UX khôi phục và hiển thị nội dung liên quan còn là phần tiếp theo. |
+| Place hard-delete | `deferred` | Luồng admin hiện dùng soft-delete; hard-delete chưa thuộc phạm vi task này và chưa nên chạy trong runtime. |
 | Taxonomy delete | `done` | Category/tag/district không xoá; chỉ update/status theo quyết định. |
 | API contract | `in_progress` | Taxonomy discovery đã có contract; các domain còn lại cần hoàn thiện URL, payload, auth, status, pagination, validation, resource. |
 | Frontend integration | `in_progress` | Taxonomy discovery đã nối API; các domain khác chờ contract. |
@@ -101,10 +101,20 @@
 
 ### Đã có implementation/route
 
+- `GET /api/admin/places`
+- `POST /api/admin/places`
 - `GET /api/admin/places/verification-queue`
 - `GET /api/admin/places/{place}`
 - `PATCH /api/admin/places/{place}`
-- `DELETE /api/admin/places/{place}`
+- `DELETE /api/admin/places/{place}` (soft-delete)
+- `GET/POST /api/admin/places/{place}/managers`
+- `POST /api/admin/places/{place}/managers/{user}/resend`
+- `DELETE /api/admin/places/{place}/managers/{user}`
+- `GET /api/admin/manager-applications`
+- `POST /api/admin/manager-applications/{id}/approve`
+- `POST /api/admin/manager-applications/{id}/reject`
+- `POST /api/manager-applications`
+- `POST /api/auth/account/setup`
 
 - `GET /api/test`
 - `POST /api/auth/register`
@@ -197,7 +207,21 @@
 - Kiểm chứng: [`plans/`](./) chỉ còn file tiến độ, không còn tham chiếu Markdown đến bốn plan đã xóa và `git diff --check` đạt.
 - Không ảnh hưởng backend, frontend, API, database, Docker hoặc runtime; không cần chạy test/lint/build ứng dụng.
 
+## Task Admin CRUD Places + Sub-admin — đã hoàn thành
+
+- Phạm vi: admin list/create/update/soft-delete places; cấp Sub-admin thủ công với activation email token 24h; activation đặt password và verify email; User xin làm Sub-admin cho place hiện hữu; Sub-admin dùng chung `/api/auth/login`; xóa Place đổi hard-delete → soft-delete.
+- Khu vực ảnh hưởng: backend routes/controllers/requests/actions/repositories/resources/mail/migration/tests; frontend routes/pages/services/CSS; docs API và ERD.
+- Thay đổi contract đã duyệt: DELETE Place chuyển hard-delete → soft-delete; migration mở rộng `manager_applications`; nới role `/auth/login` và `/auth/me` cho `sub_admin`.
+- Đã cập nhật frontend verification để không còn phụ thuộc `next_unverified_id` trong response update/delete; màn hình tự chọn ID tiếp theo từ queue hiện tại.
+- Migration `2026_08_12_000001` đã ở trạng thái `Ran` trong Docker Compose, batch 7; không chạy lại hoặc reset dữ liệu.
+- Đã rà soát CSS admin trong `hnaj-fe/src/App.css`: không phát hiện conflict thực tế cần sửa; các selector lặp lại nằm trong cascade/pseudo-state/media query có chủ đích.
+- Kiểm chứng trong Docker Compose: backend `185 passed (749 assertions)`; frontend lint đạt; frontend build đạt; `git diff --check` đạt; không còn tham chiếu frontend tới `next_unverified_id`.
+- Chưa thực hiện browser QA tại 375px, 768px và 1440px trong vòng này; đây vẫn là giới hạn còn lại đối với kiểm tra giao diện thật.
+
 ## Blockers và rủi ro
+
+- Không còn blocker runtime cho migration/task verification; migration đã được xác nhận trong Docker Compose.
+- Browser QA cho thay đổi UI chỉ được tuyên bố đạt nếu có thể chạy đúng route ở 375px, 768px và 1440px; vòng này chưa thực hiện browser QA.
 
 ### Task admin Place verification — kết quả
 
@@ -211,13 +235,13 @@
 
 1. Realtime notification chưa có stack/transport trong dependency hoặc Compose; không tự chọn WebSocket/SSE/provider.
 2. Hard-delete cascade có nguy cơ mất dữ liệu; mọi migration/destructive test cần phê duyệt cụ thể.
-3. Auth Sub-admin chưa có contract: dùng endpoint user chung hay endpoint riêng.
-4. Upload storage chưa có contract runtime/credential; không đọc secret, không tự chọn storage.
-5. Request manager approval cần transaction và account setup flow đồng bộ.
-6. Các tài liệu hiện còn mâu thuẫn với quyết định QA mới; cần cập nhật trước implementation.
+3. Upload storage chưa có contract runtime/credential; không đọc secret, không tự chọn storage.
+4. Các tài liệu hiện còn mâu thuẫn với quyết định QA mới; cần cập nhật trước implementation.
+5. Browser QA chỉ hoàn tất khi có thể xác thực admin trong môi trường chạy thực tế.
 
 ## Lịch sử cập nhật
 
+| 2026-08-14 | Hoàn tất rà soát task Admin CRUD Places + Sub-admin: bỏ frontend dependency vào `next_unverified_id`, xác nhận CSS không có conflict thực tế, migration đã `Ran` trong Docker Compose, backend 185/749, frontend lint/build và diff check đạt. Browser QA ba viewport chưa thực hiện trong vòng này. | Phản hồi người dùng + repository |
 | 2026-08-11 | Đơn giản hóa hard-delete Place: popup chỉ hỏi xác nhận, bỏ ô nhập tên và bỏ `confirm_name` khỏi API. Thêm regression test; backend full 170/706, frontend lint/build và diff check đạt. Browser QA 3 viewport bị chặn do token QA hết hiệu lực. | Phản hồi người dùng + repository |
 | 2026-08-11 | Điều chỉnh admin Place verification: preview URL ảnh, bắt buộc giữ thumbnail, tự chọn thumbnail thay thế khi xóa, thêm liên kết mở Google Maps tab mới không ghi visit. Frontend lint/build và diff check đạt; browser QA 3 viewport bị chặn do token QA hết hiệu lực và route chuyển về admin login; artifact tạm đã xóa. | Phản hồi người dùng + repository |
 | 2026-08-11 | Sửa lỗi admin opening hours 422: đồng bộ quy ước `day_of_week` thành `2..8`, frontend hiển thị `T2..T7,CN`, thêm regression test. Backend full test 168/700, frontend lint/build đạt; PATCH thật qua Chromium trả HTTP 200 với đủ ngày `2..8`; cleanup QA hoàn tất. | Phản hồi người dùng + browser/API QA |

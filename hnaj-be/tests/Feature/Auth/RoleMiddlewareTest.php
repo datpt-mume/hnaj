@@ -36,19 +36,32 @@ class RoleMiddlewareTest extends AuthTestCase
             ]);
     }
 
-    public function test_admin_and_sub_admin_are_forbidden_from_user_me(): void
+    public function test_admin_is_forbidden_from_user_me(): void
     {
-        foreach ([RoleName::Admin, RoleName::SubAdmin] as $role) {
-            $account = $this->createUserWithRole($role);
+        $account = $this->createUserWithRole(RoleName::Admin);
 
-            $this->actingAs($account, 'sanctum')
-                ->getJson('/api/auth/me')
-                ->assertStatus(403)
-                ->assertJson([
-                    'success' => false,
-                    'code' => 'FORBIDDEN_ROLE',
-                ]);
-        }
+        $this->actingAs($account, 'sanctum')
+            ->getJson('/api/auth/me')
+            ->assertStatus(403)
+            ->assertJson([
+                'success' => false,
+                'code' => 'FORBIDDEN_ROLE',
+            ]);
+    }
+
+    public function test_sub_admin_can_access_user_me(): void
+    {
+        $account = $this->createUserWithRole(RoleName::SubAdmin);
+
+        $this->actingAs($account, 'sanctum')
+            ->getJson('/api/auth/me')
+            ->assertOk()
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'user' => ['roles' => [RoleName::SubAdmin->value]],
+                ],
+            ]);
     }
 
     public function test_regular_user_is_forbidden_from_admin_routes(): void

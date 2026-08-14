@@ -1,5 +1,7 @@
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { RiArrowLeftLine, RiMapPin2Line, RiNavigationFill } from 'react-icons/ri'
+import { ManagerApplicationForm } from '../components/ManagerApplicationForm'
+import { useAuth } from '../hooks/useAuth'
 import type { DiscoveryPlace } from '../services/discoveryService'
 import { formatVnd } from '../utils/format'
 
@@ -9,6 +11,7 @@ function priceLabel(value: number | null): string | null {
 
 export function PlaceDetailsPage() {
   const location = useLocation()
+  const { user, isLoading } = useAuth()
   const place = (location.state as { place?: DiscoveryPlace } | null)?.place
 
   if (!place) return <Navigate to="/" replace />
@@ -38,6 +41,13 @@ export function PlaceDetailsPage() {
             </div>
           </div>
         </article>
+        {!isLoading ? (
+          <ManagerApplicationForm
+            placeId={place.id}
+            placeName={place.name}
+            isAuthenticated={Boolean(user)}
+          />
+        ) : null}
       </div>
     </main>
   )

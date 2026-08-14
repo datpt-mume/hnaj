@@ -443,17 +443,19 @@ Request thêm place do User gửi; Admin tự xem xét trùng và chuẩn hóa t
 
 #### `manager_applications`
 
-Đơn xin làm Sub-admin cho place mới. MVP không hỗ trợ xin quản lý place đã tồn tại. Không lưu password và không tạo `users` khi submit.
+Đơn xin làm Sub-admin. Hỗ trợ cả hai luồng: gắn `place_request_id` (xin quản lý place mới) hoặc gắn `place_id` + `user_id` (User đã có tài khoản xin quản lý place hiện hữu). Không lưu password và không tạo `users` khi submit.
 
 | Cột | Kiểu logic | Null | Ràng buộc / ý nghĩa |
 |---|---|---:|---|
 | `id` | BIGINT UNSIGNED | Không | PK |
-| `place_request_id` | BIGINT UNSIGNED | Không | FK `place_requests.id`; request phải là place mới trong MVP |
+| `place_request_id` | BIGINT UNSIGNED | Có | FK `place_requests.id`; null khi đơn gắn place hiện hữu |
+| `place_id` | BIGINT UNSIGNED | Có | FK `places.id`; null khi đơn gắn place mới |
+| `user_id` | BIGINT UNSIGNED | Có | FK `users.id`; người xin khi đã là User hệ thống, null với luồng đăng ký account mới |
 | `email` | VARCHAR | Không | Email dự kiến, không nhất thiết là User hiện tại |
 | `representative_name` | VARCHAR | Không | Người đại diện |
 | `proof_reference` | VARCHAR hoặc TEXT | Có | Tham chiếu giấy tờ, không lưu dữ liệu nhạy cảm tùy tiện |
 | `status` | VARCHAR | Không | `pending`, `approved`, `rejected` |
-| `approved_user_id` | BIGINT UNSIGNED | Có | FK `users.id`, set sau khi approved và tạo account |
+| `approved_user_id` | BIGINT UNSIGNED | Có | FK `users.id`, set sau khi approved |
 | `reviewed_by` | BIGINT UNSIGNED | Có | FK `users.id`, Admin |
 | `reviewed_at` | DATETIME | Có | Thời điểm duyệt |
 | `review_reason` | TEXT | Có | Lý do |

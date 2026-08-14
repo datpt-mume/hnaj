@@ -10,10 +10,10 @@
 | Role | Endpoint đăng nhập | Google OAuth | Phạm vi |
 |---|---|---:|---|
 | `user` | `POST /api/auth/login` | Có | Người dùng thông thường |
-| `sub_admin` | Chưa thuộc phạm vi auth hiện tại | Không | Quản lý place được cấp quyền |
+| `sub_admin` | `POST /api/auth/login` | Không | Quản lý place được cấp quyền; email chỉ nhận thông báo/activation |
 | `admin` | `POST /api/admin/auth/login` | Không | Khu vực quản trị |
 
-Endpoint user chỉ cấp token cho tài khoản có role `user`. Endpoint admin chỉ cấp token cho tài khoản có role `admin`. Backend luôn đọc role từ database; frontend guard không phải security boundary.
+Endpoint user cấp token cho tài khoản có role `user` **hoặc** `sub_admin`; Sub-admin dùng cùng token user, login trang thường hoạt động như user và chỉ được thêm quyền vào khu quản lý place. Endpoint admin chỉ cấp token cho tài khoản có role `admin`. Backend luôn đọc role từ database; frontend guard không phải security boundary.
 
 ## 2. Đăng ký user
 
@@ -63,7 +63,7 @@ Response luôn trung lập để không tiết lộ email có tồn tại, đã 
 }
 ```
 
-Yêu cầu tài khoản active, email đã xác thực và có role `user`.
+Yêu cầu tài khoản active, email đã xác thực và có role `user` hoặc `sub_admin`. Sub-admin được tạo thủ công chưa thể đăng nhập cho tới khi hoàn tất setup tài khoản (mục 5).
 
 ```json
 {
@@ -85,7 +85,24 @@ Yêu cầu tài khoản active, email đã xác thực và có role `user`.
 }
 ```
 
-## 5. Google OAuth cho user
+## 5. Kích hoạt tài khoản Sub-admin
+
+### `POST /api/auth/account/setup`
+
+```json
+{
+  "token": "plaintext-token-from-email",
+  "password": "matkhau2026",
+  "password_confirmation": "matkhau2026"
+}
+```
+
+- Chỉ áp dụng cho tài khoản Sub-admin được Admin tạo thủ công.
+- Token dùng một lần, hiệu lực 24 giờ, lưu SHA-256 hash trong `account_setup_tokens`. Liên kết email chuyển tới `${FRONTEND_URL}/setup-account?token=...`.
+- Kích hoạt đồng thời: đặt password mới, đánh dấu email verified (email xác nhận quyền sở hữu) và account mới có thể đăng nhập.
+- Token sai/đã dùng/hết hạn trả `422` code `INVALID_VERIFICATION_TOKEN`.
+
+## 6. Google OAuth cho user
 
 1. `GET /api/auth/google/redirect` trả `data.authorization_url` có OAuth `state` chống CSRF và set cookie HttpOnly `hnaj_google_oauth_flow` trong 5 phút.
 2. Trình duyệt chuyển tới Google rồi quay về `GET /api/auth/google/callback`.
@@ -96,7 +113,7 @@ Google phải xác nhận email đã verified. Tài khoản Google mới nhận 
 
 Mọi callback Google không hợp lệ (thiếu/sai `state`, thiếu cả `code` lẫn `error`, gửi đồng thời cả hai, v.v.) đều redirect trình duyệt về `${FRONTEND_URL}/auth/google/callback?error=GOOGLE_AUTH_FAILED` và xóa cookie OAuth tạm, thay vì trả trang JSON 422 cho trình duyệt.
 
-## 6. Admin login và tạo tài khoản
+## 7. Admin login và tạo tài khoản
 
 ### `POST /api/admin/auth/login`
 
@@ -117,14 +134,14 @@ Action là bootstrap one-time create-only: từ chối nếu hệ thống đã c
 
 Không ghi password thật vào source code, tài liệu, shell history chia sẻ hoặc log.
 
-## 7. Endpoint cần token
+## 8. Endpoint cần token
 
-- `GET /api/auth/me`: thông tin user hiện tại, yêu cầu Sanctum token và role `user`.
+- `GET /api/auth/me`: thông tin user hiện tại, yêu cầu Sanctum token và role `user` hoặc `sub_admin`.
 - `POST /api/auth/logout`: thu hồi token đang dùng.
 - `GET /api/admin/auth/me`: yêu cầu Sanctum token và role `admin`.
 - `POST /api/admin/auth/logout`: yêu cầu Sanctum token và role `admin`, thu hồi token admin đang dùng.
 
-## 8. Mã lỗi auth
+## 9. Mã lỗi auth
 
 | Code | HTTP | Ý nghĩa |
 |---|---:|---|

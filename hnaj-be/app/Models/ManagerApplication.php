@@ -10,6 +10,8 @@ class ManagerApplication extends Model
 {
     protected $fillable = [
         'place_request_id',
+        'place_id',
+        'user_id',
         'email',
         'representative_name',
         'proof_reference',
@@ -28,6 +30,16 @@ class ManagerApplication extends Model
     public function placeRequest(): BelongsTo
     {
         return $this->belongsTo(PlaceRequest::class);
+    }
+
+    public function place(): BelongsTo
+    {
+        return $this->belongsTo(Place::class);
+    }
+
+    public function applicant(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function approvedUser(): BelongsTo

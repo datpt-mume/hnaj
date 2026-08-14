@@ -3,11 +3,21 @@
 use App\Http\Controllers\Api\Admin\Auth\AdminLoginController;
 use App\Http\Controllers\Api\Admin\Auth\AdminMeController;
 use App\Http\Controllers\Api\Admin\Place\AdminPlaceDestroyController;
+use App\Http\Controllers\Api\Admin\Place\AdminPlaceIndexController;
+use App\Http\Controllers\Api\Admin\Place\AdminPlaceManagerIndexController;
+use App\Http\Controllers\Api\Admin\Place\AdminPlaceManagerResendController;
+use App\Http\Controllers\Api\Admin\Place\AdminPlaceManagerRevokeController;
+use App\Http\Controllers\Api\Admin\Place\AdminPlaceManagerStoreController;
 use App\Http\Controllers\Api\Admin\Place\AdminPlaceShowController;
+use App\Http\Controllers\Api\Admin\Place\AdminPlaceStoreController;
 use App\Http\Controllers\Api\Admin\Place\AdminPlaceUpdateController;
 use App\Http\Controllers\Api\Admin\Place\AdminPlaceVerificationQueueController;
+use App\Http\Controllers\Api\Admin\ManagerApplication\AdminManagerApplicationIndexController;
+use App\Http\Controllers\Api\Admin\ManagerApplication\AdminManagerApplicationReviewController;
 use App\Http\Controllers\Api\Admin\Tag\AdminTagStoreController;
+use App\Http\Controllers\Api\ManagerApplication\SubmitManagerApplicationController;
 use App\Http\Controllers\Api\Place\SearchPlaceController;
+use App\Http\Controllers\Api\Auth\AccountSetupController;
 use App\Http\Controllers\Api\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\Auth\GoogleAuthController;
 use App\Http\Controllers\Api\Auth\LoginController;
@@ -58,6 +68,9 @@ Route::prefix('auth')->group(function (): void {
     Route::post('/email/resend', [EmailVerificationController::class, 'resend'])
         ->middleware('throttle:5,1');
 
+    Route::post('/account/setup', AccountSetupController::class)
+        ->middleware('throttle:10,1');
+
     Route::get('/google/redirect', [GoogleAuthController::class, 'redirect'])
         ->middleware('throttle:10,1');
     // Google gọi bằng trình duyệt nên endpoint này trả redirect, không trả JSON.
@@ -67,9 +80,17 @@ Route::prefix('auth')->group(function (): void {
         ->middleware('throttle:10,1');
 
     Route::middleware('auth:sanctum')->group(function (): void {
-        Route::get('/me', MeController::class)->middleware('role:user');
+        Route::get('/me', MeController::class)->middleware('role:user,sub_admin');
         Route::post('/logout', LogoutController::class);
     });
+});
+
+/*
+ * User thường xin làm Sub-admin cho place đã tồn tại. Chỉ user đã đăng nhập.
+ */
+Route::middleware(['auth:sanctum', 'role:user,sub_admin'])->group(function (): void {
+    Route::post('/manager-applications', SubmitManagerApplicationController::class)
+        ->middleware('throttle:10,1');
 });
 
 /*
@@ -85,11 +106,22 @@ Route::prefix('admin')->group(function (): void {
 
         Route::post('/tags', AdminTagStoreController::class)->middleware('throttle:30,1');
 
+        Route::get('/manager-applications', AdminManagerApplicationIndexController::class)->middleware('throttle:60,1');
+        Route::post('/manager-applications/{id}/approve', [AdminManagerApplicationReviewController::class, 'approve'])->middleware('throttle:10,1');
+        Route::post('/manager-applications/{id}/reject', [AdminManagerApplicationReviewController::class, 'reject'])->middleware('throttle:10,1');
+
         Route::prefix('places')->group(function (): void {
+            Route::get('/', AdminPlaceIndexController::class)->middleware('throttle:60,1');
+            Route::post('/', AdminPlaceStoreController::class)->middleware('throttle:30,1');
             Route::get('/verification-queue', AdminPlaceVerificationQueueController::class)->middleware('throttle:60,1');
             Route::get('/{place}', AdminPlaceShowController::class)->middleware('throttle:60,1');
             Route::patch('/{place}', AdminPlaceUpdateController::class)->middleware('throttle:30,1');
             Route::delete('/{place}', AdminPlaceDestroyController::class)->middleware('throttle:10,1');
+
+            Route::get('/{place}/managers', AdminPlaceManagerIndexController::class)->middleware('throttle:60,1');
+            Route::post('/{place}/managers', AdminPlaceManagerStoreController::class)->middleware('throttle:30,1');
+            Route::post('/{place}/managers/{user}/resend', AdminPlaceManagerResendController::class)->middleware('throttle:10,1');
+            Route::delete('/{place}/managers/{user}', AdminPlaceManagerRevokeController::class)->middleware('throttle:10,1');
         });
     });
 });

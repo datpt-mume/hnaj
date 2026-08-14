@@ -25,7 +25,7 @@ class LoginUser
     {
         $user = $this->authenticate->handle($username, $password);
 
-        if (! $user->hasRole(RoleName::User)) {
+        if (! $user->hasAnyRole(RoleName::User, RoleName::SubAdmin)) {
             throw AuthFlowException::forbiddenRole();
         }
 

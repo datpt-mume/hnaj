@@ -81,6 +81,13 @@ export async function verifyEmail(token: string) {
   })
 }
 
+export async function completeAccountSetup(token: string, password: string, passwordConfirmation: string) {
+  return apiRequest<{ user: AuthUser }>('/auth/account/setup', {
+    method: 'POST',
+    body: { token, password, password_confirmation: passwordConfirmation },
+  })
+}
+
 export async function resendVerification(email: string) {
   return apiRequest<null>('/auth/email/resend', {
     method: 'POST',

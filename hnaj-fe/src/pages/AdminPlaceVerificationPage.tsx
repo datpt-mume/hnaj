@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useDiscoveryMetadata } from '../hooks/useDiscoveryMetadata'
+import { OPENING_DAYS, toOpeningHoursState } from '../utils/adminPlaceForm'
 import {
   createAdminTag,
   deleteAdminPlace,
@@ -10,19 +11,10 @@ import {
   updateAdminPlace,
   type AdminPlace,
   type AdminPlaceOpeningHour,
+  type UpdateAdminPlacePayload,
 } from '../services/adminPlaceService'
 import type { FilterTag } from '../services/metaService'
 import { ApiRequestError, getApiErrorMessage } from '../services/httpClient'
-
-const OPENING_DAYS = [
-  { label: 'T2', dayOfWeek: 2 },
-  { label: 'T3', dayOfWeek: 3 },
-  { label: 'T4', dayOfWeek: 4 },
-  { label: 'T5', dayOfWeek: 5 },
-  { label: 'T6', dayOfWeek: 6 },
-  { label: 'T7', dayOfWeek: 7 },
-  { label: 'CN', dayOfWeek: 8 },
-] as const
 
 function getExternalHttpUrl(value: string): string | null {
   try {
@@ -31,19 +23,6 @@ function getExternalHttpUrl(value: string): string | null {
   } catch {
     return null
   }
-}
-
-function toOpeningHoursState(hours: AdminPlaceOpeningHour[]): AdminPlaceOpeningHour[] {
-  const hoursByDay = new Map(hours.map((hour) => [hour.day_of_week, hour]))
-
-  return OPENING_DAYS.map(({ dayOfWeek }) =>
-    hoursByDay.get(dayOfWeek) ?? {
-      day_of_week: dayOfWeek,
-      schedule_type: 'regular',
-      opens_at: '08:00',
-      closes_at: '22:00',
-    },
-  )
 }
 
 export function AdminPlaceVerificationPage() {
@@ -191,7 +170,7 @@ export function AdminPlaceVerificationPage() {
       setError(null)
       setSuccess(null)
       try {
-        const payload = {
+        const payload: UpdateAdminPlacePayload = {
           name: form.name.trim(),
           address_text: form.address_text.trim(),
           district_id: Number(form.district_id),
@@ -217,17 +196,13 @@ export function AdminPlaceVerificationPage() {
           deleted_image_ids: form.deleted_image_ids,
         }
 
-        const result = await updateAdminPlace(place.id, payload as never)
+        await updateAdminPlace(place.id, payload)
         setSuccess('Đã cập nhật và xác minh địa điểm. Đang chuyển tiếp...')
         // Remove current from queue and go next
         const nextIds = queueIds.filter((id) => id !== place.id)
         setQueueIds(nextIds)
         setTotalUnverified((v) => Math.max(0, v - 1))
-        if (result.next_unverified_id && nextIds.includes(result.next_unverified_id)) {
-          const idx = nextIds.indexOf(result.next_unverified_id)
-          setCurrentIndex(idx)
-          setCurrentId(result.next_unverified_id)
-        } else if (nextIds.length > 0) {
+        if (nextIds.length > 0) {
           const idx = Math.min(currentIndex, nextIds.length - 1)
           setCurrentIndex(idx)
           setCurrentId(nextIds[idx])
@@ -287,17 +262,13 @@ export function AdminPlaceVerificationPage() {
     setDeleting(true)
     setError(null)
     try {
-      const result = await deleteAdminPlace(place.id)
+      await deleteAdminPlace(place.id)
       setSuccess('Đã xóa địa điểm.')
       setShowDelete(false)
       const nextIds = queueIds.filter((id) => id !== place.id)
       setQueueIds(nextIds)
       setTotalUnverified((v) => Math.max(0, v - 1))
-      if (result.next_unverified_id && nextIds.includes(result.next_unverified_id)) {
-        const idx = nextIds.indexOf(result.next_unverified_id)
-        setCurrentIndex(idx)
-        setCurrentId(result.next_unverified_id)
-      } else if (nextIds.length > 0) {
+      if (nextIds.length > 0) {
         const idx = Math.min(currentIndex, nextIds.length - 1)
         setCurrentIndex(idx)
         setCurrentId(nextIds[idx])
