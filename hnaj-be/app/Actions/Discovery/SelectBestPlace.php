@@ -3,6 +3,7 @@
 namespace App\Actions\Discovery;
 
 use App\Models\Place;
+use App\Repositories\BookmarkRepository;
 use App\Repositories\PlaceRepository;
 
 /**
@@ -21,6 +22,7 @@ class SelectBestPlace
 {
     public function __construct(
         private readonly PlaceRepository $places,
+        private readonly BookmarkRepository $bookmarks,
     ) {}
 
     public function handle(DiscoveryFilters $filters): ?Place
@@ -31,8 +33,16 @@ class SelectBestPlace
             return null;
         }
 
-        return Place::query()
+        $place = Place::query()
             ->with(['district', 'category', 'tags', 'thumbnail', 'openingHours'])
             ->find($placeId);
+
+        if ($place !== null && $filters->userId !== null) {
+            // Gán cờ để PlaceResource trả is_bookmarked khi request có user
+            // (docs/api-bookmarks.md).
+            $place->bookmark_state = $this->bookmarks->exists($filters->userId, (int) $place->id);
+        }
+
+        return $place;
     }
 }

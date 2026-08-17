@@ -9,6 +9,7 @@ type RecommendationModalProps = {
   place: DiscoveryPlace | null
   isLoading: boolean
   error: string
+  isBookmarkLoading?: boolean
   onClose: () => void
   onRetry: () => void
   onRoll: () => void
@@ -24,6 +25,7 @@ export function RecommendationModal({
   place,
   isLoading,
   error,
+  isBookmarkLoading = false,
   onClose,
   onRetry,
   onRoll,
@@ -109,6 +111,8 @@ export function RecommendationModal({
             onDetails={onDetails}
             onBookmark={onBookmark}
             isRolling={false}
+            isBookmarked={place.is_bookmarked ?? false}
+            isBookmarkLoading={isBookmarkLoading}
           />
         ) : null}
       </section>

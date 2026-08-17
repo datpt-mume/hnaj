@@ -11,6 +11,7 @@ import { Toggle } from '../components/Toggle'
 import { useAuth } from '../hooks/useAuth'
 import { randomPlace } from '../services/discoveryService'
 import type { DiscoveryFilters, DiscoveryPlace } from '../services/discoveryService'
+import { createBookmark, deleteBookmark } from '../services/bookmarkService'
 import { DEFAULT_MIN_PRICE, DEFAULT_MAX_PRICE } from '../components/FilterPanel'
 import { getApiErrorMessage } from '../services/httpClient'
 import { useDiscoveryMetadata } from '../hooks/useDiscoveryMetadata'
@@ -39,6 +40,7 @@ export function HomePage() {
   const [error, setError] = useState('')
   const [hasRolled, setHasRolled] = useState(false)
   const [isResultOpen, setIsResultOpen] = useState(false)
+  const [isBookmarkLoading, setIsBookmarkLoading] = useState(false)
 
   const buildRequest = useCallback(
     (): DiscoveryFilters => {
@@ -106,12 +108,31 @@ export function HomePage() {
     setIsResultOpen(false)
   }
 
-  function handleBookmark() {
+  async function handleBookmark() {
+    if (!place) return
     if (!user) {
       navigate('/login', { state: { from: '/' } })
       return
     }
-    // TODO(bookmark): gọi bookmark API khi backend có API.
+
+    setIsBookmarkLoading(true)
+
+    // Optimistic toggle; rollback nếu API thất bại.
+    const previous = place.is_bookmarked ?? false
+    setPlace({ ...place, is_bookmarked: !previous })
+
+    try {
+      if (previous) {
+        await deleteBookmark(place.id)
+      } else {
+        await createBookmark(place.id)
+      }
+    } catch (requestError) {
+      setPlace({ ...place, is_bookmarked: previous })
+      setError(getApiErrorMessage(requestError, 'Không thể cập nhật bookmark. Hãy thử lại.'))
+    } finally {
+      setIsBookmarkLoading(false)
+    }
   }
 
   return (
@@ -212,12 +233,13 @@ export function HomePage() {
           place={place}
           isLoading={isLoading}
           error={error}
+          isBookmarkLoading={isBookmarkLoading}
           onClose={handleCloseResult}
           onRetry={() => void runRandom(excluded)}
           onRoll={() => void handleRoll()}
           onNavigate={handleNavigate}
           onDetails={handleDetails}
-          onBookmark={handleBookmark}
+          onBookmark={() => void handleBookmark()}
         />
       </section>
     </main>

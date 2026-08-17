@@ -41,6 +41,9 @@ class PlaceResource extends JsonResource
             ])->values()),
             'min_price' => $this->min_price,
             'max_price' => $this->max_price,
+            // Trạng thái bookmark của user hiện tại; chỉ xuất hiện khi request có
+            // bearer token hợp lệ (docs/api-bookmarks.md). Guest không có field này.
+            'is_bookmarked' => $this->when($request->user('sanctum') !== null, fn (): bool => $this->bookmark_state ?? false),
             // Aggregate rating from User HNAJ reviews; places without reviews
             // keep the 5.0 default.
             'rating' => $this->rating !== null ? (float) $this->rating : null,

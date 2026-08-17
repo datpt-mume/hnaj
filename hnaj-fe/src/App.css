@@ -499,6 +499,7 @@
   align-items: center;
   gap: var(--space-sm);
   position: relative;
+  margin-left: auto;
 }
 
 .auth-nav__skeleton {
@@ -1594,7 +1595,8 @@
   font-size: 1.25rem;
   cursor: pointer;
 }
-.icon-button:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.icon-button:hover,
+.icon-button--active { border-color: var(--color-primary); color: var(--color-primary); }
 .icon-button:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 
 /* ========== Empty State ========== */
@@ -1941,3 +1943,223 @@
 .price-range__inputs,
 .price-range__slider { min-width: 0; }
 .filter-group--price .price-range__output { margin: 0; }
+
+/* ========== Bookmarks Shell ========== */
+.bookmarks-shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.bookmarks-content {
+  flex: 1;
+  padding: var(--space-xl) var(--space-lg);
+  max-width: 72rem;
+  margin-inline: auto;
+  width: 100%;
+}
+.bookmarks-content__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+}
+.bookmarks-content__titles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.bookmarks-content__header h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.bookmarks-content__count {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+.bookmarks-content__error {
+  background: var(--color-error-soft);
+  border: var(--rule-thin) solid var(--color-error);
+  border-radius: var(--radius-card);
+  padding: var(--space-md) var(--space-lg);
+  color: var(--color-error);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+}
+.bookmarks-content__error p {
+  margin: 0;
+}
+
+/* ========== View Toggle ========== */
+.bookmarks-view-toggle {
+  display: inline-flex;
+  border: var(--rule-thin) solid var(--color-rule);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.bookmarks-view-toggle__button {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  display: inline-grid;
+  place-items: center;
+  border: none;
+  background: var(--color-surface-raised);
+  color: var(--color-ink);
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+}
+.bookmarks-view-toggle__button + .bookmarks-view-toggle__button {
+  border-left: var(--rule-thin) solid var(--color-rule);
+}
+.bookmarks-view-toggle__button:hover {
+  background: var(--color-rule);
+}
+.bookmarks-view-toggle__button--active {
+  background: var(--color-primary);
+  color: #fff;
+}
+.bookmarks-view-toggle__button--active:hover {
+  background: var(--color-primary-deep);
+}
+.bookmarks-view-toggle__button:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
+/* ========== Grid Layout ========== */
+.bookmarks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  gap: var(--space-lg);
+}
+
+/* ========== List Layout ========== */
+.bookmarks-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* ========== PlaceListCard ========== */
+.place-list-card {
+  display: grid;
+  grid-template-columns: minmax(9rem, 16rem) 1fr;
+  overflow: hidden;
+  border: var(--rule-thin) solid var(--color-rule);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-card);
+}
+.place-list-card__media {
+  min-width: 0;
+  min-height: 100%;
+  background: var(--color-cream-soft);
+}
+.place-list-card__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  object-fit: cover;
+}
+.place-list-card__placeholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--color-primary);
+  background: var(--color-cream-soft);
+}
+.place-list-card__body {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+}
+.place-list-card__heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); }
+.place-list-card__category {
+  margin: 0;
+  color: var(--color-flame);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.place-list-card__name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.place-list-card__address {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+.place-list-card__address svg { flex: 0 0 auto; margin-top: 0.2rem; color: var(--color-primary); }
+.place-list-card__price {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-ink-soft);
+}
+.place-list-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.place-list-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+/* ========== Pagination ========== */
+.bookmarks-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-lg);
+  margin-top: var(--space-xl);
+}
+.bookmarks-pagination__info {
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 40rem) {
+  .bookmarks-content { padding: var(--space-lg); }
+  .bookmarks-content__header { flex-direction: column; align-items: stretch; }
+  .bookmarks-grid { grid-template-columns: 1fr; }
+  .place-list-card { grid-template-columns: 1fr; }
+  .place-list-card__media { aspect-ratio: 16 / 9; }
+  .bookmarks-pagination { flex-wrap: wrap; }
+}
+
+@media (min-width: 60rem) {
+  .bookmarks-grid { grid-template-columns: repeat(3, 1fr); }
+}

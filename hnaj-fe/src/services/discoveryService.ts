@@ -25,6 +25,8 @@ export type DiscoveryPlace = {
   longitude: number
   google_maps_url: string
   opening_hours: DiscoveryOpeningHour[]
+  /** Chỉ xuất hiện khi request có bearer token hợp lệ (docs/api-bookmarks.md). */
+  is_bookmarked?: boolean
 }
 
 export type DiscoveryFilters = {

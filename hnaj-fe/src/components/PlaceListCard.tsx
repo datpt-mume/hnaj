@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { RiBookmarkFill, RiBookmarkLine, RiEyeLine, RiMapPin2Line, RiNavigationFill, RiRefreshLine } from 'react-icons/ri'
+import { RiBookmarkFill, RiBookmarkLine, RiEyeLine, RiMapPin2Line, RiNavigationFill } from 'react-icons/ri'
 import type { DiscoveryPlace } from '../services/discoveryService'
 import { formatVnd } from '../utils/format'
 
@@ -12,54 +12,49 @@ function priceLabel(place: DiscoveryPlace): string | null {
   return null
 }
 
-type PlaceCardProps = {
+type PlaceListCardProps = {
   place: DiscoveryPlace
   onNavigate: () => void
   onBookmark: () => void
   onDetails?: () => void
-  /** Khi có callback, hiện nút "Roll lại" (dùng ở discovery modal). */
-  onRoll?: () => void
-  isRolling?: boolean
   isBookmarked?: boolean
   isBookmarkLoading?: boolean
 }
 
-export function PlaceCard({
+export function PlaceListCard({
   place,
   onNavigate,
   onBookmark,
   onDetails,
-  onRoll,
-  isRolling = false,
   isBookmarked = false,
   isBookmarkLoading = false,
-}: PlaceCardProps) {
+}: PlaceListCardProps) {
   const price = priceLabel(place)
   const [imageFailed, setImageFailed] = useState(false)
   const showImage = Boolean(place.thumbnail) && !imageFailed
 
   return (
-    <article className="place-card" aria-live={onRoll ? 'polite' : undefined}>
-      <div className="place-card__media">
+    <article className="place-list-card">
+      <div className="place-list-card__media">
         {showImage && place.thumbnail ? (
           <img
             src={place.thumbnail.image_url}
             alt={place.thumbnail.alt_text || place.name}
             loading="lazy"
-            width="640"
-            height="360"
+            width="320"
+            height="180"
             onError={() => setImageFailed(true)}
           />
         ) : (
-          <div className="place-card__placeholder" aria-hidden="true">
+          <div className="place-list-card__placeholder" aria-hidden="true">
             {place.name.charAt(0)}
           </div>
         )}
       </div>
 
-      <div className="place-card__body">
-        <div className="place-card__heading">
-          <p className="place-card__category">
+      <div className="place-list-card__body">
+        <div className="place-list-card__heading">
+          <p className="place-list-card__category">
             {place.category?.name ?? 'Địa điểm'}
           </p>
           <button
@@ -79,9 +74,9 @@ export function PlaceCard({
           </button>
         </div>
 
-        <h3 className="place-card__name">{place.name}</h3>
+        <h3 className="place-list-card__name">{place.name}</h3>
 
-        <p className="place-card__address">
+        <p className="place-list-card__address">
           <RiMapPin2Line aria-hidden="true" />
           <span>
             {place.address_text}
@@ -89,10 +84,10 @@ export function PlaceCard({
           </span>
         </p>
 
-        {price ? <p className="place-card__price">{price}</p> : null}
+        {price ? <p className="place-list-card__price">{price}</p> : null}
 
         {place.tags.length > 0 ? (
-          <ul className="place-card__tags" aria-label="Tags">
+          <ul className="place-list-card__tags" aria-label="Tags">
             {place.tags.map((tag) => (
               <li key={tag.id}>
                 <span className="tag">#{tag.name}</span>
@@ -101,32 +96,21 @@ export function PlaceCard({
           </ul>
         ) : null}
 
-        <div className="place-card__actions">
+        <div className="place-list-card__actions">
           {onDetails ? (
-            <button className="button button--secondary button--details" type="button" onClick={onDetails}>
+            <button className="button button--secondary" type="button" onClick={onDetails}>
               <RiEyeLine aria-hidden="true" />
               Xem chi tiết
             </button>
           ) : null}
           <button
-            className="button button--flame button--navigate"
+            className="button button--flame"
             type="button"
             onClick={onNavigate}
           >
             <RiNavigationFill aria-hidden="true" />
             Đi tới đó
           </button>
-          {onRoll ? (
-            <button
-              className="button button--secondary button--roll"
-              type="button"
-              onClick={onRoll}
-              disabled={isRolling}
-            >
-              <RiRefreshLine aria-hidden="true" />
-              {isRolling ? 'Đang chọn…' : 'Roll lại'}
-            </button>
-          ) : null}
         </div>
       </div>
     </article>

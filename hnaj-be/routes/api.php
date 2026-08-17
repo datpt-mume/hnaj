@@ -15,6 +15,9 @@ use App\Http\Controllers\Api\Admin\Place\AdminPlaceVerificationQueueController;
 use App\Http\Controllers\Api\Admin\ManagerApplication\AdminManagerApplicationIndexController;
 use App\Http\Controllers\Api\Admin\ManagerApplication\AdminManagerApplicationReviewController;
 use App\Http\Controllers\Api\Admin\Tag\AdminTagStoreController;
+use App\Http\Controllers\Api\Bookmark\BookmarkDestroyController;
+use App\Http\Controllers\Api\Bookmark\BookmarkIndexController;
+use App\Http\Controllers\Api\Bookmark\BookmarkStoreController;
 use App\Http\Controllers\Api\ManagerApplication\SubmitManagerApplicationController;
 use App\Http\Controllers\Api\Place\SearchPlaceController;
 use App\Http\Controllers\Api\Auth\AccountSetupController;
@@ -93,6 +96,18 @@ Route::prefix('auth')->group(function (): void {
 Route::middleware(['auth:sanctum', 'role:user,sub_admin'])->group(function (): void {
     Route::post('/manager-applications', SubmitManagerApplicationController::class)
         ->middleware('throttle:10,1');
+});
+
+/*
+ * Bookmark địa điểm yêu thích của User. Chỉ user đã đăng nhập, riêng tư.
+ */
+Route::middleware(['auth:sanctum', 'role:user,sub_admin'])->group(function (): void {
+    Route::get('/bookmarks', BookmarkIndexController::class)
+        ->middleware('throttle:60,1');
+    Route::post('/bookmarks', BookmarkStoreController::class)
+        ->middleware('throttle:30,1');
+    Route::delete('/bookmarks/{place}', BookmarkDestroyController::class)
+        ->middleware('throttle:30,1');
 });
 
 /*
