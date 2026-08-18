@@ -43,4 +43,18 @@ final class PlacePersonalizationRepository
             ->map(static fn (mixed $id): int => (int) $id)
             ->all();
     }
+
+    /**
+     * Kiểm tra nhanh một place đã được user bookmark chưa.
+     *
+     * Dùng cho trang chi tiết để gán `bookmark_state` mà không cần load
+     * toàn bộ candidate set như `bookmarkedPlaceIds`.
+     */
+    public function isBookmarked(int $userId, int $placeId): bool
+    {
+        return Bookmark::query()
+            ->where('user_id', $userId)
+            ->where('place_id', $placeId)
+            ->exists();
+    }
 }

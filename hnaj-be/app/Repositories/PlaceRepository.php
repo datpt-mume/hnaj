@@ -5,6 +5,8 @@ namespace App\Repositories;
 use App\Actions\Discovery\DiscoveryContext;
 use App\Actions\Discovery\DiscoveryFilters;
 use App\Actions\Discovery\PlaceScorer;
+use App\Enums\PlaceStatus;
+use App\Enums\TagStatus;
 use App\Models\Place;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -136,5 +138,44 @@ class PlaceRepository
             $context->latitude,
             $context->longitude,
         );
+    }
+
+    /**
+     * Load một place công khai kèm relations cần thiết cho trang chi tiết.
+     *
+     * Chỉ trả place `status = active`, `is_verified = true` và chưa soft-delete.
+     * `images` chỉ lấy ảnh đang visible; gallery không lộ ảnh đã bị admin ẩn.
+     * `bookmark_state` được gán theo user hiện tại (null khi guest) để
+     * `PlaceDetailResource` trả `is_bookmarked` nhất quán với card.
+     *
+     * @param  int  $placeId
+     * @param  int|null  $userId  null = guest
+     * @return \App\Models\Place|null
+     */
+    public function findPublicDetail(int $placeId, ?int $userId = null): ?Place
+    {
+        $place = Place::query()
+            ->where('places.id', $placeId)
+            ->where('places.status', PlaceStatus::Active)
+            ->where('places.is_verified', true)
+            ->with([
+                'district',
+                'category',
+                'tags' => fn ($q) => $q->where('tags.status', TagStatus::Active),
+                'thumbnail',
+                'images' => fn ($q) => $q->where('place_images.is_visible', true)->latest(),
+                'openingHours' => fn ($q) => $q->orderBy('day_of_week'),
+            ])
+            ->first();
+
+        if ($place === null) {
+            return null;
+        }
+
+        if ($userId !== null) {
+            $place->bookmark_state = $this->personalization->isBookmarked($userId, $placeId);
+        }
+
+        return $place;
     }
 }

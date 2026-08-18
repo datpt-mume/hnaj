@@ -1,7 +1,7 @@
 # Theo dõi tiến độ dự án HNAJ
 
-- **Cập nhật:** 2026-08-12
-- **Trạng thái tổng:** Đã xóa các artifact kế hoạch riêng; chỉ giữ file theo dõi tiến độ này và không lưu plan riêng theo từng task
+- **Cập nhật:** 2026-08-18
+- **Trạng thái tổng:** Place detail page đã triển khai end-to-end; chỉ giữ file theo dõi tiến độ này và không lưu plan riêng theo từng task
 - **Nguồn nghiệp vụ:** [`docs/prd.md`](../docs/prd.md:1)
 - **Nguồn auth hiện có:** [`docs/api-auth.md`](../docs/api-auth.md:1)
 - **Nguồn response:** [`docs/api-response-contract.md`](../docs/api-response-contract.md:1)
@@ -23,6 +23,7 @@
 | Auth Admin | `done` | Admin login, logout, me, bootstrap one-time đã có. |
 | Auth Sub-admin | `done` | Dùng chung `/api/auth/login` và `/api/auth/me` với role `user` hoặc `sub_admin`; tài khoản Sub-admin kích hoạt qua token setup. |
 | Discovery/search | `done` | Random, search, filter, pagination đang có implementation/test. |
+| Place detail | `done` | `GET /api/places/{id}` public + optional auth; FE `/places/:placeId` fetch theo id, gallery/hours/contact/placeholder review; visit tracking tách task. |
 | Taxonomy discovery | `done` | Đã triển khai `GET /api/meta/discovery`; frontend dùng dữ liệu active từ backend, không còn taxonomy ID hard-code. Lint/build đạt; backend test bị chặn bởi dotenv Compose hiện tại. |
 | Giá hiển thị | `done` | API/DB giữ integer VND; UI thống nhất `vi-VN` + hậu tố `VNĐ` qua `formatVnd`. |
 | Profile | `done` | Chỉ sửa `full_name`; `username`, `email`, `avatar_url` read-only. `PATCH /api/auth/me` + UI trang `/account`. |
@@ -134,13 +135,14 @@
 
 ### Đã triển khai gần nhất
 
+- Place detail: `GET /api/places/{place}`; public, optional bearer token cho `is_bookmarked`; chỉ place active + verified; 404 cho hidden/unverified/soft-deleted; FE `/places/:placeId` fetch theo id (không còn phụ thuộc `location.state` để F5/share).
 - Taxonomy discovery: `GET /api/meta/discovery`; public, read-only, trả category/district/tag active trong một response; không migration, không dependency mới.
 
 ### Cần thiết kế và triển khai MVP
 
 - Profile: `GET/PATCH /api/auth/me`; chỉ `full_name` writable.
 - Password: forgot request, reset, change; token one-time 24 giờ; thu hồi token khác sau change.
-- Places: detail, hot, public status behavior.
+- Places: hot, public status behavior (detail đã có `GET /api/places/{place}`).
 - Categories/districts/tags: public list; Admin update/status.
 - Bookmarks: list/create/delete của User.
 - Visits/history: create-on-go, history list, dedupe theo User-place-ngày.
@@ -251,6 +253,8 @@
 
 ## Lịch sử cập nhật
 
+| 2026-08-18 | Place detail page end-to-end: backend `GET /api/places/{place}` (PlaceShowController/ShowPlace/findPublicDetail/PlaceDetailResource/PlaceImageResource), feature test 8 passed; docs `api-place-detail.md`; FE `placeService` + rewrite `PlaceDetailsPage` (fetch theo id, gallery, hours open/closed, contact, share, review placeholder, sticky CTA mobile); CSS token-based. Kiểm chứng Docker: PlaceDetail+Search+Bookmark 39 passed, frontend lint/build đạt, smoke API 200/404. Browser QA 375/768/1440 đã chạy (xem dòng dưới). Visit tracking tách task. | Kế hoạch đã duyệt + repository |
+| 2026-08-18 | Browser QA place detail (375/768/1440): chạy bằng Playwright/Chromium headless trên `/places/29` và `/places/999999`. Kết quả: không horizontal overflow ở 3 viewport (`scrollWidth = clientWidth`); sticky CTA mobile chỉ hiện ở 375 (được ẩn ở ≥768 theo CSS); trạng thái not-found render đúng ở 375/1440; focus outline 2px hiển thị trên nút bookmark. Phát hiện và đã sửa: hero image khi URL ảnh lỗi (HTTP 400/BLOCKED_BY_ORB) hiện icon broken, thiếu `onError` fallback như PlaceCard — đã thêm state `mediaFailed` + `onError` hiển thị letter placeholder theo CSS `.place-details__media span` sẵn có, reset khi tải place mới và khi chuyển thumbnail. Frontend lint 0 lỗi, build thành công, `git diff --check` đạt; đã chụp lại 3 viewport xác nhận fallback hiển thị placeholder. Toàn bộ ảnh/script QA tạm đã xóa. | Phản hồi người dùng + browser QA |
 | 2026-08-17 | Redesign `/bookmarks`: grid/list toggle, tách `PlaceCard` (grid, tái dùng discovery) và `PlaceListCard` (list ngang), CSS shell/grid/list/toggle/pagination, image onError fallback, localStorage persist view mode (`hnaj.bookmarks.view`). Frontend lint 0 lỗi, build thành công; backend không thay đổi. Browser QA 3 viewport bị chặn do môi trường không có browser tool. | Repository |
 | 2026-08-18 | Xác nhận Bookmark API hoàn chỉnh: backend routes/controllers/actions/repositories/resources/tests (15 test cases), frontend service/page/integration, docs contract. Trạng thái chuyển từ `planned` → `done`. Visit tracking chưa triển khai. | Kiểm tra hệ thống |
 | 2026-08-14 | Sửa findings review Profile: bỏ import thừa, bảo vệ `avatar_url` read-only bằng regression assertion, đồng bộ input `fullName` theo auth state, sửa heading API auth trùng. Focused test 7 passed/27 assertions, full backend test đạt, frontend lint/build đạt, `git diff --check` đạt. Hai file Discovery ngoài scope được giữ nguyên theo phê duyệt; browser QA Profile chưa thực hiện vì môi trường không cung cấp browser tool. | Phản hồi người dùng + repository |

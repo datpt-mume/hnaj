@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\Bookmark\BookmarkDestroyController;
 use App\Http\Controllers\Api\Bookmark\BookmarkIndexController;
 use App\Http\Controllers\Api\Bookmark\BookmarkStoreController;
 use App\Http\Controllers\Api\ManagerApplication\SubmitManagerApplicationController;
+use App\Http\Controllers\Api\Place\PlaceShowController;
 use App\Http\Controllers\Api\Place\SearchPlaceController;
 use App\Http\Controllers\Api\Auth\AccountSetupController;
 use App\Http\Controllers\Api\Auth\EmailVerificationController;
@@ -55,7 +56,16 @@ Route::prefix('discovery')->group(function (): void {
  * throttle chống spam query. Đặt trước mọi route `places/{place}` tương lai.
  */
 Route::prefix('places')->group(function (): void {
+    // `/search` phải đứng trước `/{place}` để không bị route binding nuốt.
     Route::get('/search', SearchPlaceController::class)
+        ->middleware('throttle:60,1');
+
+    /*
+     * Public detail endpoint. Public (guest/user), optional bearer token để
+     * expose `is_bookmarked`. Place ẩn/chưa verified/soft-deleted trả 404.
+     */
+    Route::get('/{place}', PlaceShowController::class)
+        ->whereNumber('place')
         ->middleware('throttle:60,1');
 });
 
