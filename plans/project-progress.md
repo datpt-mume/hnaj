@@ -27,7 +27,7 @@
 | Giá hiển thị | `done` | API/DB giữ integer VND; UI thống nhất `vi-VN` + hậu tố `VNĐ` qua `formatVnd`. |
 | Profile | `done` | Chỉ sửa `full_name`; `username`, `email`, `avatar_url` read-only. `PATCH /api/auth/me` + UI trang `/account`. |
 | Password recovery/change | `planned` | User/Sub-admin: reset token một lần 24 giờ; đổi cần password hiện tại; đổi xong thu hồi token khác. Admin chỉ đổi nội bộ. |
-| Bookmark/visit/history | `planned` | Nghiệp vụ đã chốt, route/API domain chưa có. |
+| Bookmark/visit/history | `done` | Bookmark API hoàn chỉnh (GET/POST/DELETE), frontend BookmarksPage redesign grid/list toggle, integration HomePage/PlaceDetailsPage/RecommendationModal. Visit tracking chưa triển khai. |
 | Review/comment | `planned` | User đăng nhập; review cần visit, một review/place; comment nhiều; reply theo quyền. |
 | User content images | `planned` | Tối đa 5 ảnh/nội dung, 5 MB/ảnh, JPEG/PNG/WebP; hiển thị ngay; Admin ẩn/gỡ sau. |
 | Report/moderation | `planned` | Report review/comment/ảnh; lý do cố định; một report mở/User/nội dung; Admin pending → dismissed/actioned. |
@@ -252,6 +252,7 @@
 ## Lịch sử cập nhật
 
 | 2026-08-17 | Redesign `/bookmarks`: grid/list toggle, tách `PlaceCard` (grid, tái dùng discovery) và `PlaceListCard` (list ngang), CSS shell/grid/list/toggle/pagination, image onError fallback, localStorage persist view mode (`hnaj.bookmarks.view`). Frontend lint 0 lỗi, build thành công; backend không thay đổi. Browser QA 3 viewport bị chặn do môi trường không có browser tool. | Repository |
+| 2026-08-18 | Xác nhận Bookmark API hoàn chỉnh: backend routes/controllers/actions/repositories/resources/tests (15 test cases), frontend service/page/integration, docs contract. Trạng thái chuyển từ `planned` → `done`. Visit tracking chưa triển khai. | Kiểm tra hệ thống |
 | 2026-08-14 | Sửa findings review Profile: bỏ import thừa, bảo vệ `avatar_url` read-only bằng regression assertion, đồng bộ input `fullName` theo auth state, sửa heading API auth trùng. Focused test 7 passed/27 assertions, full backend test đạt, frontend lint/build đạt, `git diff --check` đạt. Hai file Discovery ngoài scope được giữ nguyên theo phê duyệt; browser QA Profile chưa thực hiện vì môi trường không cung cấp browser tool. | Phản hồi người dùng + repository |
 | 2026-08-14 | Hoàn tất rà soát task Admin CRUD Places + Sub-admin: bỏ frontend dependency vào `next_unverified_id`, xác nhận CSS không có conflict thực tế, migration đã `Ran` trong Docker Compose, backend 185/749, frontend lint/build và diff check đạt. Browser QA ba viewport chưa thực hiện trong vòng này. | Phản hồi người dùng + repository |
 | 2026-08-11 | Đơn giản hóa hard-delete Place: popup chỉ hỏi xác nhận, bỏ ô nhập tên và bỏ `confirm_name` khỏi API. Thêm regression test; backend full 170/706, frontend lint/build và diff check đạt. Browser QA 3 viewport bị chặn do token QA hết hiệu lực. | Phản hồi người dùng + repository |
