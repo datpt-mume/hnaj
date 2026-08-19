@@ -1,7 +1,7 @@
 # Theo dõi tiến độ dự án HNAJ
 
-- **Cập nhật:** 2026-08-18
-- **Trạng thái tổng:** Place detail page đã triển khai end-to-end; chỉ giữ file theo dõi tiến độ này và không lưu plan riêng theo từng task
+- **Cập nhật:** 2026-08-19
+- **Trạng thái tổng:** Visit tracking + lịch sử "Đi tới đó" đã triển khai end-to-end; chỉ giữ file theo dõi tiến độ này và không lưu plan riêng theo từng task
 - **Nguồn nghiệp vụ:** [`docs/prd.md`](../docs/prd.md:1)
 - **Nguồn auth hiện có:** [`docs/api-auth.md`](../docs/api-auth.md:1)
 - **Nguồn response:** [`docs/api-response-contract.md`](../docs/api-response-contract.md:1)
@@ -28,7 +28,7 @@
 | Giá hiển thị | `done` | API/DB giữ integer VND; UI thống nhất `vi-VN` + hậu tố `VNĐ` qua `formatVnd`. |
 | Profile | `done` | Chỉ sửa `full_name`; `username`, `email`, `avatar_url` read-only. `PATCH /api/auth/me` + UI trang `/account`. |
 | Password recovery/change | `planned` | User/Sub-admin: reset token một lần 24 giờ; đổi cần password hiện tại; đổi xong thu hồi token khác. Admin chỉ đổi nội bộ. |
-| Bookmark/visit/history | `done` | Bookmark API hoàn chỉnh (GET/POST/DELETE), frontend BookmarksPage redesign grid/list toggle, integration HomePage/PlaceDetailsPage/RecommendationModal. Visit tracking chưa triển khai. |
+| Bookmark/visit/history | `done` | Bookmark API hoàn chỉnh (GET/POST/DELETE), frontend BookmarksPage redesign; Visit tracking + lịch sử đã có `POST /api/visits` (public, optional auth, idempotent) và `GET /api/visits` (auth, unique place). |
 | Review/comment | `planned` | User đăng nhập; review cần visit, một review/place; comment nhiều; reply theo quyền. |
 | User content images | `planned` | Tối đa 5 ảnh/nội dung, 5 MB/ảnh, JPEG/PNG/WebP; hiển thị ngay; Admin ẩn/gỡ sau. |
 | Report/moderation | `planned` | Report review/comment/ảnh; lý do cố định; một report mở/User/nội dung; Admin pending → dismissed/actioned. |
@@ -229,6 +229,16 @@
 - Đã rà soát CSS admin trong `hnaj-fe/src/App.css`: không phát hiện conflict thực tế cần sửa; các selector lặp lại nằm trong cascade/pseudo-state/media query có chủ đích.
 - Kiểm chứng trong Docker Compose: backend `185 passed (749 assertions)`; frontend lint đạt; frontend build đạt; `git diff --check` đạt; không còn tham chiếu frontend tới `next_unverified_id`.
 - Chưa thực hiện browser QA tại 375px, 768px và 1440px trong vòng này; đây vẫn là giới hạn còn lại đối với kiểm tra giao diện thật.
+
+## Task Visit Tracking + lịch sử "Đi tới đó" — đã hoàn thành
+
+- Phạm vi đã duyệt: `POST /api/visits` public optional-auth (idempotent, `visit_date` theo `Asia/Ho_Chi_Minh`), `GET /api/visits` lịch sử auth `user,sub_admin` unique place; ghi visit từ CTA Đi tới đó ở Home/Detail/Bookmarks/Search; trang `/history` dưới `RequireAuth`.
+- Không migration (bảng `visit_events`/`anonymous_visit_events` đã tồn tại), không dependency, không đổi Docker, không breaking contract (endpoint mới).
+- Backend: `VisitErrorCode`, `VisitException` + handler, `VisitRepository`, `RecordVisit`, `ListVisitHistory`, `StoreVisitRequest`, `VisitResource`, `VisitHistoryResource`, `VisitStoreController`, `VisitIndexController`, route mới; guest dùng hash `SHA-256(X-Anonymous-Id)` — không lưu IP/plaintext.
+- Frontend: `visitService`, `anonymousId` (localStorage `hnaj.anonymous_id`), `useGoThere` (fire-and-forget, mở Maps trước), gắn CTA ở 4 nơi (Home `discovery`, Detail `detail`, Bookmarks `bookmarks`, Search `search`), `HistoryPage` (grid/list, pagination, bookmark toggle, empty/error/loading), route `/history`.
+- Kiểm chứng trong Docker Compose: backend `VisitTest` 15 passed/50 assertions; backend full test `239 passed (953 assertions)`; frontend `npm run lint` 0 lỗi; frontend `npm run build` (tsc + vite) thành công; `git diff --check` đạt.
+- Sau review, đã fix: `is_bookmarked` trong history được gán từ `Bookmark` (tránh false), source `history` được thêm vào validation/docs/frontend.
+- Chưa kiểm chứng: browser QA thật tại 375/768/1440 (môi trường chưa cung cấp browser tool); không tuyên bố UI đạt bằng mắt.
 
 ## Blockers và rủi ro
 

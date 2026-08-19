@@ -21,6 +21,7 @@ import {
 import { ManagerApplicationForm } from '../components/ManagerApplicationForm'
 import { Skeleton } from '../components/Skeleton'
 import { useAuth } from '../hooks/useAuth'
+import { useGoThere } from '../hooks/useGoThere'
 import { createBookmark, deleteBookmark } from '../services/bookmarkService'
 import type { DiscoveryOpeningHour, DiscoveryPlace } from '../services/discoveryService'
 import { ApiRequestError, getApiErrorMessage } from '../services/httpClient'
@@ -112,6 +113,7 @@ export function PlaceDetailsPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, isLoading: isAuthLoading } = useAuth()
+  const goThere = useGoThere()
 
   const placeId = Number(placeIdParam)
   const seedFromState = (location.state as { place?: DiscoveryPlace } | null)?.place
@@ -223,6 +225,11 @@ export function PlaceDetailsPage() {
     } catch {
       setShareFeedback('Không thể chia sẻ. Hãy sao chép URL thủ công.')
     }
+  }
+
+  function handleGoThere() {
+    if (!place) return
+    goThere(place, 'detail')
   }
 
   if (!Number.isFinite(placeId) || placeId <= 0 || isNotFound) {
@@ -407,14 +414,13 @@ export function PlaceDetailsPage() {
             ) : null}
 
             <div className="place-details__actions">
-              <a
+              <button
                 className="button button--flame"
-                href={place.google_maps_url}
-                target="_blank"
-                rel="noreferrer"
+                type="button"
+                onClick={handleGoThere}
               >
                 <RiNavigationFill aria-hidden="true" /> Đi tới đó
-              </a>
+              </button>
               <button className="button button--ghost" type="button" onClick={() => void handleShare()}>
                 <RiShareForwardLine aria-hidden="true" /> Chia sẻ
               </button>
@@ -514,14 +520,13 @@ export function PlaceDetailsPage() {
         ) : null}
 
         <div className="place-details__sticky-cta" aria-hidden={false}>
-          <a
+          <button
             className="button button--flame place-details__sticky-button"
-            href={place.google_maps_url}
-            target="_blank"
-            rel="noreferrer"
+            type="button"
+            onClick={handleGoThere}
           >
             <RiNavigationFill aria-hidden="true" /> Đi tới đó
-          </a>
+          </button>
         </div>
       </div>
     </main>

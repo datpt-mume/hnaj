@@ -9,6 +9,7 @@ import { AdminPlaceEditPage } from '../pages/AdminPlaceEditPage'
 import { AdminPlacesPage } from '../pages/AdminPlacesPage'
 import { AdminPlaceVerificationPage } from '../pages/AdminPlaceVerificationPage'
 import { BookmarksPage } from '../pages/BookmarksPage'
+import { HistoryPage } from '../pages/HistoryPage'
 import { GoogleCallbackPage } from '../pages/GoogleCallbackPage'
 import { HomePage } from '../pages/HomePage'
 import { SearchPage } from '../pages/SearchPage'
@@ -34,6 +35,7 @@ export function AppRoutes() {
       <Route element={<RequireAuth />}>
         <Route path="/account" element={<AccountPage />} />
         <Route path="/bookmarks" element={<BookmarksPage />} />
+        <Route path="/history" element={<HistoryPage />} />
       </Route>
 
       <Route element={<RequireRole role="admin" />}>

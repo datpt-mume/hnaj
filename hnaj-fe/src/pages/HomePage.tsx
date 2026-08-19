@@ -7,6 +7,7 @@ import FoodPosterSlideshow from '../components/FoodPosterSlideshow'
 import { FilterPanel } from '../components/FilterPanel'
 import type { FilterState } from '../components/FilterPanel'
 import { RecommendationModal } from '../components/RecommendationModal'
+import { useGoThere } from '../hooks/useGoThere'
 import { Toggle } from '../components/Toggle'
 import { useAuth } from '../hooks/useAuth'
 import { randomPlace } from '../services/discoveryService'
@@ -31,6 +32,7 @@ const DEFAULT_FILTERS: FilterState = {
 export function HomePage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const goThere = useGoThere()
   const { metadata, isLoading: isMetadataLoading, error: metadataError, retry: retryMetadata } = useDiscoveryMetadata()
 
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS)
@@ -95,8 +97,7 @@ export function HomePage() {
 
   function handleNavigate() {
     if (!place) return
-    window.open(place.google_maps_url, '_blank', 'noopener,noreferrer')
-    // TODO(visit): ghi visit event khi backend có API; hiện chỉ mở Maps.
+    goThere(place, 'discovery')
   }
 
   function handleDetails() {

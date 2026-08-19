@@ -21,6 +21,7 @@ final class ApiExceptionHandler
         return match (true) {
             $exception instanceof AuthFlowException => $this->renderAuthFlow($exception),
             $exception instanceof BookmarkException => $this->renderBookmark($exception),
+            $exception instanceof VisitException => $this->renderVisit($exception),
             $exception instanceof AuthenticationException => $this->renderUnauthenticated(),
             $exception instanceof ValidationException => $this->renderValidation($exception),
             $exception instanceof NotFoundHttpException => $this->renderNotFound(),
@@ -38,6 +39,15 @@ final class ApiExceptionHandler
     }
 
     private function renderBookmark(BookmarkException $exception): JsonResponse
+    {
+        return ApiResponse::error(
+            message: $exception->getMessage(),
+            code: $exception->errorCode->value,
+            status: $exception->status,
+        );
+    }
+
+    private function renderVisit(VisitException $exception): JsonResponse
     {
         return ApiResponse::error(
             message: $exception->getMessage(),

@@ -1,7 +1,10 @@
 import { RiMapPin2Line } from 'react-icons/ri'
 import type { DiscoveryPlace } from '../services/discoveryService'
+import { useGoThere } from '../hooks/useGoThere'
 
 export function SearchResultCard({ place }: { place: DiscoveryPlace }) {
+  const goThere = useGoThere()
+
   return (
     <article className="search-result-card">
       <div className="search-result-card__media">
@@ -36,14 +39,13 @@ export function SearchResultCard({ place }: { place: DiscoveryPlace }) {
             ))}
           </ul>
         ) : null}
-        <a
+        <button
           className="button button--flame search-result-card__navigate"
-          href={place.google_maps_url}
-          target="_blank"
-          rel="noopener noreferrer"
+          type="button"
+          onClick={() => goThere(place, 'search')}
         >
           Đi tới đó
-        </a>
+        </button>
       </div>
     </article>
   )

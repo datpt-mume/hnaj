@@ -8,13 +8,14 @@ import { PlaceListCard } from '../components/PlaceListCard'
 import { Skeleton } from '../components/Skeleton'
 import { useAuth } from '../hooks/useAuth'
 import { useGoThere } from '../hooks/useGoThere'
-import type { DiscoveryPlace } from '../services/discoveryService'
-import { deleteBookmark, listBookmarks } from '../services/bookmarkService'
+import { createBookmark, deleteBookmark } from '../services/bookmarkService'
+import { listVisitHistory } from '../services/visitService'
+import type { VisitHistoryPlace } from '../services/visitService'
 import { getApiErrorMessage } from '../services/httpClient'
 
 type ViewMode = 'grid' | 'list'
 
-const VIEW_STORAGE_KEY = 'hnaj.bookmarks.view'
+const VIEW_STORAGE_KEY = 'hnaj.history.view'
 
 function readStoredViewMode(): ViewMode {
   try {
@@ -26,31 +27,31 @@ function readStoredViewMode(): ViewMode {
   return 'grid'
 }
 
-export function BookmarksPage() {
+export function HistoryPage() {
   useAuth()
   const navigate = useNavigate()
   const goThere = useGoThere()
 
-  const [places, setPlaces] = useState<DiscoveryPlace[]>([])
+  const [places, setPlaces] = useState<VisitHistoryPlace[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [page, setPage] = useState(1)
   const [lastPage, setLastPage] = useState(1)
   const [total, setTotal] = useState(0)
-  const [isBookmarkLoading, setIsBookmarkLoading] = useState<number | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>(() => readStoredViewMode())
+  const [isBookmarkLoading, setIsBookmarkLoading] = useState<number | null>(null)
 
-  const loadBookmarks = useCallback(async (targetPage: number, signal?: AbortSignal) => {
+  const loadHistory = useCallback(async (targetPage: number, signal?: AbortSignal) => {
     setIsLoading(true)
     setError('')
     try {
-      const result = await listBookmarks({ page: targetPage, per_page: 10, signal })
+      const result = await listVisitHistory({ page: targetPage, per_page: 10, signal })
       setPlaces(result.places)
       setLastPage(result.meta.last_page)
       setTotal(result.meta.total)
     } catch (requestError) {
       if (signal?.aborted) return
-      setError(getApiErrorMessage(requestError, 'Không thể tải danh sách bookmark. Hãy thử lại.'))
+      setError(getApiErrorMessage(requestError, 'Không thể tải lịch sử đi tới. Hãy thử lại.'))
     } finally {
       if (!signal?.aborted) setIsLoading(false)
     }
@@ -58,9 +59,9 @@ export function BookmarksPage() {
 
   useEffect(() => {
     const controller = new AbortController()
-    void loadBookmarks(page, controller.signal)
+    void loadHistory(page, controller.signal)
     return () => controller.abort()
-  }, [page, loadBookmarks])
+  }, [page, loadHistory])
 
   function handleViewModeChange(mode: ViewMode) {
     setViewMode(mode)
@@ -71,51 +72,56 @@ export function BookmarksPage() {
     }
   }
 
-  async function handleRemoveBookmark(placeId: number) {
-    setIsBookmarkLoading(placeId)
+  function handleNavigate(place: VisitHistoryPlace) {
+    goThere(place, 'history')
+  }
 
+  function handleDetails(place: VisitHistoryPlace) {
+    navigate(`/places/${place.id}`, { state: { place } })
+  }
+
+  async function handleBookmark(place: VisitHistoryPlace) {
+    setIsBookmarkLoading(place.id)
     const previous = places
-    setPlaces((current) => current.filter((p) => p.id !== placeId))
-    setTotal((current) => Math.max(0, current - 1))
+    const isBookmarked = Boolean(place.is_bookmarked)
+
+    setPlaces((current) =>
+      current.map((p) => (p.id === place.id ? { ...p, is_bookmarked: !isBookmarked } : p)),
+    )
 
     try {
-      await deleteBookmark(placeId)
+      if (isBookmarked) {
+        await deleteBookmark(place.id)
+      } else {
+        await createBookmark(place.id)
+      }
     } catch {
       setPlaces(previous)
-      setTotal((current) => current + 1)
     } finally {
       setIsBookmarkLoading(null)
     }
   }
 
-  function handleNavigate(place: DiscoveryPlace) {
-    goThere(place, 'bookmarks')
-  }
-
-  function handleDetails(place: DiscoveryPlace) {
-    navigate(`/places/${place.id}`, { state: { place } })
-  }
-
   return (
-    <main className="bookmarks-shell" aria-label="Địa điểm yêu thích">
+    <main className="bookmarks-shell" aria-label="Lịch sử đi tới">
       <nav className="home-nav" aria-label="Điều hướng chính">
         <Link className="wordmark" to="/" aria-label="Hôm nay ăn gì? - Trang chủ">
           <img src="/logo.png" alt="Hôm nay ăn gì?" />
         </Link>
         <div className="home-nav__links">
           <Link className="home-nav__link" to="/">Khám phá</Link>
-          <Link className="home-nav__link home-nav__link--active" to="/bookmarks">Điểm đến yêu thích</Link>
-          <Link className="home-nav__link" to="/history">Lịch sử</Link>
+          <Link className="home-nav__link" to="/bookmarks">Điểm đến yêu thích</Link>
+          <Link className="home-nav__link home-nav__link--active" to="/history">Lịch sử</Link>
         </div>
         <AuthNav />
       </nav>
 
-      <section className="bookmarks-content" aria-labelledby="bookmarks-title">
+      <section className="bookmarks-content" aria-labelledby="history-title">
         <header className="bookmarks-content__header">
           <div className="bookmarks-content__titles">
-            <h1 id="bookmarks-title">Điểm đến yêu thích</h1>
+            <h1 id="history-title">Lịch sử đi tới</h1>
             {total > 0 ? (
-              <p className="bookmarks-content__count">{total} địa điểm đã lưu</p>
+              <p className="bookmarks-content__count">{total} địa điểm đã ghé</p>
             ) : null}
           </div>
 
@@ -146,7 +152,7 @@ export function BookmarksPage() {
         {error ? (
           <div className="bookmarks-content__error" role="alert">
             <p>{error}</p>
-            <button className="button button--secondary" type="button" onClick={() => void loadBookmarks(page)}>
+            <button className="button button--secondary" type="button" onClick={() => void loadHistory(page)}>
               Thử lại
             </button>
           </div>
@@ -154,7 +160,7 @@ export function BookmarksPage() {
 
         {isLoading ? (
           viewMode === 'grid' ? (
-            <div className="bookmarks-grid" aria-label="Đang tải danh sách" aria-busy="true">
+            <div className="bookmarks-grid" aria-label="Đang tải lịch sử" aria-busy="true">
               {Array.from({ length: 6 }, (_, i) => (
                 <div key={i} className="place-card place-card--loading">
                   <Skeleton className="skeleton--media" />
@@ -167,7 +173,7 @@ export function BookmarksPage() {
               ))}
             </div>
           ) : (
-            <div className="bookmarks-list" aria-label="Đang tải danh sách" aria-busy="true">
+            <div className="bookmarks-list" aria-label="Đang tải lịch sử" aria-busy="true">
               {Array.from({ length: 4 }, (_, i) => (
                 <div key={i} className="place-list-card place-list-card--loading">
                   <Skeleton className="skeleton--media place-list-card__media-skeleton" />
@@ -182,8 +188,8 @@ export function BookmarksPage() {
           )
         ) : !error && places.length === 0 ? (
           <EmptyState
-            title="Chưa có địa điểm yêu thích"
-            description="Hãy khám phá và lưu những địa điểm bạn thích."
+            title="Chưa có lịch sử đi tới"
+            description="Khi bạn bấm “Đi tới đó”, địa điểm sẽ xuất hiện ở đây."
             action={
               <Link className="button button--flame" to="/">
                 Bắt đầu khám phá
@@ -198,11 +204,11 @@ export function BookmarksPage() {
                   <PlaceCard
                     key={place.id}
                     place={place}
-                    isBookmarked
+                    isBookmarked={Boolean(place.is_bookmarked)}
                     isBookmarkLoading={isBookmarkLoading === place.id}
-                    onBookmark={() => void handleRemoveBookmark(place.id)}
                     onNavigate={() => handleNavigate(place)}
                     onDetails={() => handleDetails(place)}
+                    onBookmark={() => void handleBookmark(place)}
                   />
                 ))}
               </div>
@@ -212,18 +218,18 @@ export function BookmarksPage() {
                   <PlaceListCard
                     key={place.id}
                     place={place}
-                    isBookmarked
+                    isBookmarked={Boolean(place.is_bookmarked)}
                     isBookmarkLoading={isBookmarkLoading === place.id}
-                    onBookmark={() => void handleRemoveBookmark(place.id)}
                     onNavigate={() => handleNavigate(place)}
                     onDetails={() => handleDetails(place)}
+                    onBookmark={() => void handleBookmark(place)}
                   />
                 ))}
               </div>
             )}
 
             {lastPage > 1 ? (
-              <nav className="bookmarks-pagination" aria-label="Phân trang bookmark">
+              <nav className="bookmarks-pagination" aria-label="Phân trang lịch sử">
                 <button
                   className="button button--secondary"
                   type="button"
