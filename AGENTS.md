@@ -452,3 +452,17 @@ Ví dụ loại commit có thể dùng khi phù hợp: `feat`, `fix`, `refactor`
 - [ ] Test, lint, format và build liên quan đã chạy theo script thật trong Docker Compose.
 - [ ] Mọi bước chưa chạy và rủi ro còn lại đã được báo rõ.
 - [ ] Agent không tự commit hoặc push.
+
+## Agent skills
+
+### Issue tracker
+
+Local markdown: spec và ticket là file markdown trong repo — spec tại `.scratch/<feature-slug>/spec.md`, ticket một file mỗi phần việc tại `.scratch/<feature-slug>/issues/<NN>-<slug>.md`. Commit policy: manual — skill không tự commit/push, dừng ở diff + gợi ý commit message. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Giữ 5 label mặc định: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix` — với tracker local markdown, label ghi dạng dòng `Labels:` cạnh dòng `Status:` trong file ticket. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: một `CONTEXT.md` + `docs/adr/` ở repo root, tạo lazily khi `/domain-modeling` chạy; trước khi có, dùng `docs/migration/knowledge-base/` làm nguồn domain cho việc port BE. See `docs/agents/domain.md`.

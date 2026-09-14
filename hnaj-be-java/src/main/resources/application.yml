@@ -1,0 +1,138 @@
+spring:
+  application:
+    name: hnaj-be-java
+
+  # ====================================================================
+  # Database — riêng cho Spring Boot, KHÔNG đụng `hnaj` của Laravel
+  # Connection read từ env (AGENTS.md §10: không hard-code credential)
+  # ====================================================================
+  datasource:
+    url: jdbc:mysql://${DB_HOST:mysql}:${DB_PORT:3306}/${DB_DATABASE:hnaj_java}?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${DB_USERNAME:hnaj_java}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 10000
+
+  jpa:
+    hibernate:
+      # Flyway quản lý schema hoàn toàn — KHÔNG ddl-auto
+      ddl-auto: none
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        jdbc:
+          time_zone: Asia/Ho_Chi_Minh
+        format_sql: false
+    show-sql: false
+
+  flyway:
+    enabled: true
+    clean-disabled: true
+    # Q2: gộp 38 Laravel migration thành 1 baseline V1
+    baseline-on-migrate: true
+    baseline-version: 1
+    locations: classpath:db/migration
+
+  # Cache cho Google OAuth state/exchange code (Q3: Caffeine in-memory)
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=2m
+
+  # Mail: dev mode = log (Q12: chưa có SMTP thật, giống Laravel MAIL_MAILER=log)
+  mail:
+    host: ${MAIL_HOST:127.0.0.1}
+    port: ${MAIL_PORT:2525}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: false
+      mail.smtp.starttls.enable: false
+
+# ====================================================================
+# HNAJ-specific config
+# ====================================================================
+hnaj:
+  frontend:
+    # Base URL of the SPA used to build verify/account-setup deep links.
+    base-url: ${FRONTEND_URL:http://localhost:8082}
+  auth:
+    # Opaque API bearer token lifetime; set to 0 only for an explicitly configured non-expiring mode.
+    token-expires-in-hours: ${HNAJ_TOKEN_EXPIRES_IN_HOURS:24}
+  security:
+    # Tương thích Sanctum BCrypt rounds=12 (04-auth-security §C7)
+    bcrypt-rounds: 12
+  cache:
+    # Google OAuth state + exchange code TTL
+    google-oauth-ttl-seconds: 60
+  cors:
+    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:8082}
+  bootstrap-admin:
+    # Opt-in: HNAJ_BOOTSTRAP_ADMIN=true + HNAJ_ADMIN_* để tạo admin một lần khi khởi động.
+    enabled: ${HNAJ_BOOTSTRAP_ADMIN:false}
+  business:
+    # Quay ước day_of_week: 2=T2 ... 8=CN (03-domain-rules §9)
+    day-of-week-min: 2
+    day-of-week-max: 8
+    # Asia/Ho_Chi_Minh cho visit_date
+    timezone: Asia/Ho_Chi_Minh
+    # Search place
+    search:
+      default-per-page: 10
+      max-per-page: 50
+      max-query-length: 100
+    # Visit
+    visit:
+      max-source-length: 30
+      # Khoảng cách cache row history tối đa
+      history-page-size: 20
+
+# Google OAuth (RestClientGoogleOAuthClient đọc trực tiếp env GOOGLE_CLIENT_ID /
+# GOOGLE_CLIENT_SECRET / GOOGLE_REDIRECT_URI, không mặc định trong YAML để tránh
+# tự tham chiếu placeholder và không bake secret).
+
+# Rate limit: Bucket4j core qua RateLimitFilter (bảng rule trong RateLimitService),
+# mirror Laravel throttle:N,1 cho từng route auth.
+
+# ====================================================================
+# Server
+# ====================================================================
+server:
+  port: ${SERVER_PORT:8083}
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
+  tomcat:
+    # Hard cap for auth JSON bodies (Laravel post_max_size equivalence at the edge);
+    # larger requests fail fast instead of being buffered.
+    max-http-form-post-size: 64KB
+    max-http-request-header-size: 16KB
+
+logging:
+  level:
+    root: INFO
+    com.hnaj: INFO
+    org.flywaydb: INFO
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# ====================================================================
+# Profile: test (chạy trong CI/Docker test) dùng DB riêng
+# ====================================================================
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:mysql://${DB_HOST:mysql}:${DB_PORT:3306}/${DB_TEST_DATABASE:hnaj_java_test}?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${DB_USERNAME:hnaj_java}
+    password: ${DB_PASSWORD}
+  flyway:
+    clean-disabled: true

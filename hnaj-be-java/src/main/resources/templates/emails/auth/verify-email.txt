@@ -1,0 +1,9 @@
+Chào ${user.name},
+
+Bạn đã đăng ký tài khoản tại HNAJ. Vui lòng xác thực email của bạn trong vòng ${expiresInHours} giờ bằng liên kết dưới đây:
+
+${verificationUrl}
+
+Nếu bạn không thực hiện đăng ký này, hãy bỏ qua email này.
+
+— HNAJ

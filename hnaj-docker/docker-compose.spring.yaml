@@ -1,0 +1,54 @@
+# Standalone Spring stack; reuse MySQL on the existing external network.
+# Run from hnaj-docker with --env-file .env -f docker-compose.spring.yaml.
+# MySQL must already be ready, with hnaj_java and hnaj_java_test provisioned
+# separately by an authorized operator. This file never provisions databases.
+# Unit tests do not need MySQL; Compose still requires a nonempty placeholder
+# HNAJ_JAVA_DB_PASSWORD when parsing the runtime service (do not use a real
+# credential for unit-only verification).
+
+services:
+  backend-java:
+    build:
+      context: ../hnaj-be-java
+      dockerfile: Dockerfile
+      target: runtime
+    image: hnaj-be-java:dev
+    container_name: hnaj-be-java
+    working_dir: /app
+    env_file:
+      - .env
+    environment:
+      SERVER_PORT: 8083
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: hnaj_java
+      DB_USERNAME: hnaj_java
+      DB_PASSWORD: ${HNAJ_JAVA_DB_PASSWORD:?HNAJ_JAVA_DB_PASSWORD must be set}
+    networks:
+      - hnaj
+    restart: unless-stopped
+
+  backend-java-test:
+    profiles: [test]
+    build:
+      context: ../hnaj-be-java
+      dockerfile: Dockerfile
+      target: backend-java-test
+    image: hnaj-be-java:test
+    working_dir: /workspace
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: hnaj_java_test
+      DB_USERNAME: hnaj_java
+      # Unit tests do not resolve datasource settings. Integration tests must
+      # explicitly provide DB_PASSWORD via `docker compose run -e DB_PASSWORD`.
+    networks:
+      - hnaj
+    restart: "no"
+
+networks:
+  hnaj:
+    external: true
+    name: hnaj_hnaj
