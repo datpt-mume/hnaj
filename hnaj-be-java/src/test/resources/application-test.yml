@@ -1,5 +1,0 @@
-# Profile test: dùng DB_DATABASE override (set trong docker-compose.spring.yaml).
-# Bật Flyway để schema tự migrate khi chạy integration test.
-spring:
-  flyway:
-    enabled: true

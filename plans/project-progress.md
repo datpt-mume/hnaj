@@ -1,6 +1,7 @@
 # Theo dõi tiến độ dự án HNAJ
 
 - **Cập nhật:** 2026-09-12 (Cấu hình agent skills cho Phase 3: local-markdown tracker + labels mặc định + commit policy manual)
+- **Ticket 02 — Place search (2026-09-12):** đã thêm HTTP endpoint Spring `GET /api/places/search`, validation `q/page/per_page`, tokenized search trên place/category/tag/address, active + verified + non-deleted filter, rating/name sort, empty-page handling, Laravel pagination meta, throttle 60/phút. Compile pass; Maven integration suite chưa chạy được vì host không resolve service `mysql` (chưa chạy Docker Compose Spring). Regression test HTTP seam chưa thêm do Java test schema/fixture Docker chưa khả dụng.
 - **Trạng thái tổng:** Phase 2 Auth migration hoàn tất (51/51 test PASS trên MySQL); Phase 3 đã có kế hoạch 5 sub-phase (3A–3E) chờ triển khai qua workflow to-spec → to-tickets → implement
 
 ## Setup agent skills (2026-09-12)

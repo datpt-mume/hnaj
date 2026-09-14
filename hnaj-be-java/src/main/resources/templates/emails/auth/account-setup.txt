@@ -1,9 +1,0 @@
-Chào ${user.name},
-
-Tài khoản quản lý địa điểm của bạn tại HNAJ đã được cấp. Vui lòng kích hoạt tài khoản trong vòng ${expiresInHours} giờ bằng liên kết dưới đây:
-
-${setupUrl}
-
-Sau khi kích hoạt, bạn có thể đăng nhập để quản lý địa điểm được giao.
-
-— HNAJ
