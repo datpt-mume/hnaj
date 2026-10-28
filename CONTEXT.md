@@ -1,18 +1,18 @@
 # Bối cảnh sản phẩm
 
-> **Trạng thái:** Ý tưởng và yêu cầu nghiệp vụ đã trao đổi; repository chưa có mã ứng dụng. Mọi chức năng dưới đây đều **dự kiến, chưa triển khai**. Tài liệu này không xác nhận bất kỳ tính năng nào đã hoạt động.
+> **Trạng thái:** Đã hoàn thành **Bước 1 (Nền tảng kỹ thuật)**: khởi tạo `backend/` (Spring Boot 4.1.2, Java 21, Maven Wrapper) với endpoint `GET /api/health` và `frontend/` (Next.js 16.4.3, TypeScript strict) hiển thị trạng thái kết nối tiếng Việt kèm bộ kiểm thử tự động (`npm run typecheck`, `npm test`). Các chức năng nghiệp vụ từ Bước 2 trở đi (Địa điểm, Đánh giá, Đề xuất, Nội dung cộng đồng) đều **dự kiến, chưa triển khai**.
 
 ## Hướng phát triển đã chốt
 
-- **Backend:** Java Spring Boot, cung cấp API cho website và có thể tái sử dụng cho ứng dụng di động sau này.
-- **Frontend:** Next.js, giao diện tiếng Việt.
+- **Backend:** Java 21 + Spring Boot (`backend/`), dùng Maven Wrapper, cung cấp API cho website và có thể tái sử dụng cho ứng dụng di động sau này.
+- **Frontend:** Next.js App Router + TypeScript strict (`frontend/`), giao diện tiếng Việt.
 - **Cách thực hiện:** Dự án cá nhân theo hướng vừa học Spring Boot vừa xây sản phẩm, triển khai từng bước nhỏ có thể chạy và kiểm thử; không xây toàn bộ mạng xã hội ngay từ đầu. Kinh nghiệm Laravel trước đây là nền tảng tham khảo, không phải công nghệ backend của dự án này.
-- **Chưa chốt:** Phiên bản framework, cơ sở dữ liệu, cách xác thực, hạ tầng triển khai và thiết kế API cụ thể. Chỉ lựa chọn công nghệ, chưa có chức năng nào được triển khai.
+- **Chưa chốt:** Cơ sở dữ liệu, cách xác thực, hạ tầng triển khai và thiết kế API nghiệp vụ cụ thể.
 
 ## Lộ trình từng bước dự kiến
 
-1. **Nền tảng:** Khởi tạo backend Spring Boot và frontend Next.js; học cấu trúc dự án, endpoint đầu tiên, cách gọi API, cấu hình chạy cục bộ và kiểm thử tối thiểu.
-2. **Địa điểm:** Thiết kế dữ liệu, nhập dữ liệu Địa điểm ban đầu từ file SQL; xây API và trang tra cứu/xem chi tiết Địa điểm. Đây là lát cắt nghiệp vụ đầu tiên để thực hành lưu trữ dữ liệu và API.
+1. **Nền tảng (Đã triển khai):** Khởi tạo backend Spring Boot (`GET /api/health`) và frontend Next.js; gọi API kiểm tra kết nối phía server, cấu hình chạy cục bộ và kiểm thử tự động ở cả hai đầu.
+2. **Địa điểm (Dự kiến tiếp theo):** Thiết kế dữ liệu, nhập dữ liệu Địa điểm ban đầu từ file SQL; xây API và trang tra cứu/xem chi tiết Địa điểm. Đây là lát cắt nghiệp vụ đầu tiên để thực hành lưu trữ dữ liệu và API.
 3. **Đánh giá:** Tài khoản, đăng nhập và quyền truy cập cần thiết; tạo/sửa/xóa Đánh giá, giới hạn một Đánh giá cho mỗi cặp người dùng–Địa điểm; hiển thị Đánh giá trên trang Địa điểm.
 4. **Đề xuất Địa điểm:** Lọc theo các điều kiện đã chọn, xếp hạng, giữ đợt tối đa 50 Địa điểm, Roll lại và mở rộng bán kính theo quy tắc trong tài liệu này. Chốt các thông số còn TBD trước khi triển khai bước này.
 5. **Nội dung cộng đồng:** Bài viết, Bài viết lịch trình, feed, tìm kiếm Bài viết, thích/bình luận, theo dõi; sau đó bổ sung luồng đề xuất Địa điểm mới và dashboard quản trị.
@@ -50,9 +50,16 @@ Sản phẩm hướng tới người dùng Việt Nam, giao diện tiếng Việ
 - **Feed và tương tác:** Có feed khám phá toàn hệ thống và feed Bài viết từ người được theo dõi; cả hai sắp theo thời gian đăng mới nhất trước. Hỗ trợ thích, bình luận Bài viết và theo dõi tài khoản. Chưa đặt thuật toán xếp hạng cho feed.
 - **Tìm kiếm:** Tìm Bài viết theo nội dung chữ và Địa điểm được gắn; Bài viết lịch trình cũng tìm được. Cho phép tra cứu Địa điểm theo tên để xem thông tin và Đánh giá. Tra cứu Địa điểm là luồng khác với đề xuất nơi nên đi.
 
-## Danh mục Địa điểm dự kiến
+## Nguồn dữ liệu Địa điểm
 
-Dữ liệu ban đầu sẽ được nhập từ một file SQL có nhiều Địa điểm. Về sau, người dùng có thể đề xuất Địa điểm qua form; đề xuất chờ quản trị viên duyệt trước khi công khai. Quản trị viên cũng có thể tự thêm Địa điểm qua dashboard. Dữ liệu mỗi Địa điểm phải đủ để xét các bộ lọc đã nêu; không mặc định nội dung do người dùng đề xuất được công khai ngay.
+- File nguồn dữ liệu ban đầu là [maps.sql](./maps.sql), một MySQL SQL dump được dùng để import vào hệ thống và làm dữ liệu thực tế cho các địa điểm; không xem đây chỉ là fixture/test data.
+- Dump được xuất từ schema `maps`, sử dụng MySQL 8.4.11, mã hóa `utf8mb4` và có các lệnh `SET FOREIGN_KEY_CHECKS` để import độc lập.
+- Dump hiện có ba bảng: `place_index` (chỉ mục `place_id` và `created_at`), `places` (thông tin chi tiết địa điểm), và `poi_places` (liên kết loại POI với `place_id`). Mỗi bảng hiện có 100 bản ghi INSERT.
+- Bảng `places` là nguồn chính cho trang/API Địa điểm, gồm `record_key`, `place_id`, URL Google Maps, tên, danh mục, địa chỉ, điện thoại, website, tọa độ `latitude`/`longitude`, `data_json` và `updated_at`. `data_json` chứa dữ liệu thu thập mở rộng như ảnh, giờ mở cửa, điểm đánh giá, mã khu vực và văn bản thô; cần parse/validate khi dùng, không giả định mọi key đều có mặt.
+- `place_id` là định danh Google Maps và khóa liên kết giữa ba bảng. Khi thiết kế migration/entity/importer, phải giữ khả năng liên kết bằng `place_id`, hỗ trợ Unicode tiếng Việt và không làm mất dữ liệu JSON gốc.
+- Dữ liệu hiện tập trung ở Hà Nội và có thể chứa địa điểm ngoài nhóm ăn uống (ví dụ dịch vụ, thú y); không hard-code giả định mọi bản ghi là nhà hàng. Các bộ lọc/phân loại nghiệp vụ cần dựa trên dữ liệu thực tế và có chiến lược xử lý giá trị thiếu.
+- Khi import lại, chạy theo thứ tự `place_index` → `places` → `poi_places` nếu có ràng buộc khóa ngoại; chỉ dùng dump này cho môi trường được phép và không sửa trực tiếp dữ liệu nguồn nếu chưa có yêu cầu.
+
 
 ## Luồng đề xuất Địa điểm dự kiến
 

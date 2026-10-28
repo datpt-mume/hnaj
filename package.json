@@ -1,0 +1,9 @@
+{
+  "name": "hnaj-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "typecheck": "node scripts/verify.mjs typecheck",
+    "test": "node scripts/verify.mjs test"
+  }
+}
